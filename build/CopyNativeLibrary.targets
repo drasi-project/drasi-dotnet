@@ -1,0 +1,21 @@
+<Project>
+  <Target Name="CopyNativeLibrary" AfterTargets="Build">
+    <PropertyGroup>
+      <_NativeName Condition="$([MSBuild]::IsOSPlatform('Windows'))">drasi_ffi.dll</_NativeName>
+      <_NativeName Condition="$([MSBuild]::IsOSPlatform('OSX'))">libdrasi_ffi.dylib</_NativeName>
+      <_NativeName Condition="$([MSBuild]::IsOSPlatform('Linux'))">libdrasi_ffi.so</_NativeName>
+      <_NativeRelease>$(MSBuildThisFileDirectory)..\native\target\release\$(_NativeName)</_NativeRelease>
+      <_NativeDebug>$(MSBuildThisFileDirectory)..\native\target\debug\$(_NativeName)</_NativeDebug>
+    </PropertyGroup>
+    <Copy
+      Condition="Exists('$(_NativeRelease)')"
+      SourceFiles="$(_NativeRelease)"
+      DestinationFolder="$(OutputPath)"
+      SkipUnchangedFiles="true" />
+    <Copy
+      Condition="!Exists('$(_NativeRelease)') AND Exists('$(_NativeDebug)')"
+      SourceFiles="$(_NativeDebug)"
+      DestinationFolder="$(OutputPath)"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

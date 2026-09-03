@@ -14,36 +14,43 @@
 
 using System.Text.Json.Nodes;
 using Drasi;
+using Microsoft.Extensions.Logging;
 
-Environment.SetEnvironmentVariable("RUST_LOG", Environment.GetEnvironmentVariable("RUST_LOG") ?? "warn");
+using var logs = LoggerFactory.Create(builder =>
+{
+    builder
+        .SetMinimumLevel(LogLevel.Warning)
+        .AddSimpleConsole(options =>
+        {
+            options.SingleLine = true;
+            options.TimestampFormat = "HH:mm:ss ";
+        });
+});
 
 const string OpenOrders = "MATCH (o:Order) WHERE o.status = 'open' RETURN o.id AS id, o.total AS total";
 
-await using var drasi = await Engine.CreateAsync("dotnet-demo");
+await using var drasi = await Engine.CreateAsync("dotnet-demo", new EngineOptions
+{
+    LoggerFactory = logs,
+});
 await drasi.StartAsync();
-await drasi.AddCsharpSourceAsync("orders");
+await drasi.AddSourceAsync("orders");
 await drasi.AddQueryAsync("open", OpenOrders, ["orders"]);
 await drasi.WaitForQueryAsync("open");
 
 var seen = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-await drasi.AddCsharpReactionAsync("watch", ["open"], evt =>
+await drasi.AddReactionAsync("watch", ["open"], evt =>
 {
-    if (evt["results"] is not JsonArray results)
+    foreach (var diff in evt.Results)
     {
-        return;
-    }
-
-    foreach (var diff in results)
-    {
-        var type = diff?["type"]?.GetValue<string>();
-        Console.WriteLine($"  {type} {diff?["data"]}");
+        Console.WriteLine($"  {diff.Type} {diff.Data}");
         seen.TrySetResult();
     }
 });
 
 await drasi.PushChangeAsync("orders", new SourceChange
 {
-    Op = "insert",
+    Op = ChangeOp.Insert,
     Id = "o1",
     Labels = ["Order"],
     Properties = new JsonObject
@@ -55,4 +62,5 @@ await drasi.PushChangeAsync("orders", new SourceChange
 });
 
 await seen.Task.WaitAsync(TimeSpan.FromSeconds(10));
-Console.WriteLine($"open orders: {await drasi.GetQueryResultsAsync("open")}");
+var rows = await drasi.GetQueryResultsAsync("open");
+Console.WriteLine($"open orders: [{string.Join(",", rows.Select(row => row.ToJsonString()))}]");

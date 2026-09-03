@@ -1,8 +1,13 @@
 <Solution>
   <Folder Name="/examples/">
     <Project Path="examples/Quickstart/Quickstart.csproj" />
+    <Project Path="examples/Plugins/Plugins.csproj" />
+    <Project Path="examples/Hosted/Hosted.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Drasi/Drasi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Drasi.Tests/Drasi.Tests.csproj" />
   </Folder>
 </Solution>

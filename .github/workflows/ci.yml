@@ -1,0 +1,51 @@
+# Build the native host and run the managed tests on each OS.
+#
+# Cross-platform RID artifacts live in native-binaries.yml.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: ubuntu-latest
+          - host: macos-latest
+          - host: windows-latest
+    runs-on: ${{ matrix.host }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install libclang for rocksdb bindgen (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang libclang-dev
+      - name: Point bindgen at LLVM (Windows)
+        if: runner.os == 'Windows'
+        run: echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Clippy
+        run: cargo clippy --manifest-path native/Cargo.toml -- -D warnings
+
+      - name: Rust tests
+        run: cargo test --manifest-path native/Cargo.toml
+
+      - name: Native library
+        run: cargo build --release --manifest-path native/Cargo.toml
+
+      - name: .NET tests
+        run: dotnet test tests/Drasi.Tests/Drasi.Tests.csproj -c Release --nologo

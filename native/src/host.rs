@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Drasi;
+//! Host version introspection used to match plugins.
 
-public sealed class DrasiException : Exception
-{
-    public DrasiException(string message) : base(message)
-    {
-    }
+pub const DRASI_CORE_VERSION: &str = "0.5.7";
+pub const DRASI_LIB_VERSION: &str = "0.8.9";
+pub const DRASI_SDK_VERSION: &str = "0.10.0";
+
+pub fn ffi_sdk_version() -> &'static str {
+    drasi_plugin_sdk::ffi::metadata::FFI_SDK_VERSION
+}
+
+pub fn target_triple() -> &'static str {
+    drasi_plugin_sdk::ffi::metadata::TARGET_TRIPLE
 }

@@ -5,7 +5,7 @@
     <RollForward>LatestMajor</RollForward>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Drasi.Examples.Quickstart</RootNamespace>
+    <RootNamespace>Drasi.Examples.Plugins</RootNamespace>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 

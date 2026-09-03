@@ -19,3 +19,8 @@
 *.so
 *.dll
 !LICENSE
+
+# Pack / test output
+/nupkgs/
+/artifacts/
+TestResults/
