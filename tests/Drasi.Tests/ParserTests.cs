@@ -14,6 +14,7 @@
 
 using System.Text.Json.Nodes;
 using Drasi;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Drasi.Tests;
@@ -151,6 +152,36 @@ public sealed class ParserTests
         Assert.Equal("orders", log.ComponentId);
         Assert.Equal("source", log.ComponentType);
         Assert.Equal(2026, log.Timestamp.Year);
+    }
+
+    [Fact]
+    public void ConfigurationKeepsNumericLookingStrings()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["id"] = "001",
+                ["secrets:TOKEN"] = "12345",
+                ["autoStart"] = "true",
+            })
+            .Build();
+        var json = ConfigurationJson.ToObject(config);
+        Assert.Equal("001", json["id"]?.GetValue<string>());
+        Assert.Equal("12345", json["secrets"]!["TOKEN"]?.GetValue<string>());
+        Assert.True(json["autoStart"]?.GetValue<bool>());
+    }
+
+    [Fact]
+    public void BuilderConfigureCanSetOptions()
+    {
+        var builder = new Drasi.DependencyInjection.DrasiBuilder("x");
+        builder.Configure(o =>
+        {
+            o.PluginsDir = "/tmp/plugins";
+            o.Secrets = new Dictionary<string, string> { ["A"] = "1" };
+        });
+        Assert.Equal("/tmp/plugins", builder.Options.PluginsDir);
+        Assert.Equal("1", builder.Options.Secrets!["A"]);
     }
 
     [Fact]

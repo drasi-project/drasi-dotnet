@@ -15,14 +15,29 @@ case "$rid" in
   *) echo "unknown RID: $rid" >&2; exit 1 ;;
 esac
 
-cargo build --manifest-path "$root/native/Cargo.toml" --"$profile" --target "$rust_target"
+case "$profile" in
+  release)
+    cargo_profile_args=(--release)
+    cargo_dir=release
+    ;;
+  debug|dev)
+    cargo_profile_args=()
+    cargo_dir=debug
+    ;;
+  *)
+    echo "unknown profile: $profile (use release or debug)" >&2
+    exit 1
+    ;;
+esac
+
+cargo build --manifest-path "$root/native/Cargo.toml" "${cargo_profile_args[@]}" --target "$rust_target"
 
 stage="$root/artifacts/runtimes"
 rm -rf "$stage"
 mkdir -p "$stage/$rid/native"
-src="$root/native/target/$rust_target/$profile/$artifact"
+src="$root/native/target/$rust_target/$cargo_dir/$artifact"
 if [[ ! -f "$src" ]]; then
-  src="$root/native/target/$profile/$artifact"
+  src="$root/native/target/$cargo_dir/$artifact"
 fi
 cp "$src" "$stage/$rid/native/$artifact"
 

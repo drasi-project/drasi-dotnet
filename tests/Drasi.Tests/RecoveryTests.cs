@@ -108,7 +108,7 @@ public sealed class RecoveryTests
         {
             Directory.Delete(path, recursive: true);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
     }

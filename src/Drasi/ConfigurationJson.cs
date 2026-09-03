@@ -72,16 +72,6 @@ internal static class ConfigurationJson
             return JsonValue.Create(flag);
         }
 
-        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var integer))
-        {
-            return JsonValue.Create(integer);
-        }
-
-        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
-        {
-            return JsonValue.Create(number);
-        }
-
         return JsonValue.Create(value);
     }
 }

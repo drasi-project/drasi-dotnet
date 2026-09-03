@@ -95,19 +95,19 @@ public sealed class EngineOptions
     public Microsoft.Extensions.Logging.ILoggerFactory? LoggerFactory { get; set; }
 
     /// <summary>In-memory secrets plugins resolve <c>ConfigValue::Secret</c> against.</summary>
-    public IReadOnlyDictionary<string, string>? Secrets { get; init; }
+    public IReadOnlyDictionary<string, string>? Secrets { get; set; }
 
     /// <summary>Persistent plugin/reaction state. Kind <c>redb</c> with a <c>Path</c>.</summary>
-    public StateStoreOptions? StateStore { get; init; }
+    public StateStoreOptions? StateStore { get; set; }
 
     /// <summary>Persistent query-index backend. Kind <c>rocksdb</c> with a <c>Path</c>.</summary>
-    public IndexStoreOptions? IndexStore { get; init; }
+    public IndexStoreOptions? IndexStore { get; set; }
 
     /// <summary>Built-in <c>password</c>/<c>token</c> identity, or a plugin kind.</summary>
-    public IdentityOptions? Identity { get; init; }
+    public IdentityOptions? Identity { get; set; }
 
     /// <summary>Directory of plugin cdylibs loaded at create time.</summary>
-    public string? PluginsDir { get; init; }
+    public string? PluginsDir { get; set; }
 }
 
 public sealed class StateStoreOptions
