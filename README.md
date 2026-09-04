@@ -122,6 +122,10 @@ await builder.Build().RunAsync();
 Push into `Engine` from the rest of the app (`GetRequiredService<Engine>()`),
 or `Seed` changes that should fire at startup.
 
+End-to-end tutorials (PostgreSQL CDC, ASP.NET Core UIs, a PostgreSQL + MySQL
+join) live under [`tutorials/`](tutorials/) and on the
+[docs site](https://drasi-project.github.io/drasi-dotnet/docs/tutorials/).
+
 Errors expose a stable `Code` (`DrasiErrorCodes`). Catch `DrasiException` or a
 more specific type (`UnknownKindException`, `SourceException`, …).
 
@@ -143,6 +147,7 @@ src/Drasi/              C# library
 examples/Quickstart/    Console sample
 examples/Plugins/       Install source/mock + reaction/log from ghcr.io
 examples/Hosted/        Generic host; configure topology in AddDrasi
+tutorials/              Getting Started, Building Comfort, Curbside Pickup
 tests/Drasi.Tests/      Public API tests
 docs/api-reference.md   Maintainer API gap audit
 website/                Hugo + Docsy docs site (GitHub Pages)

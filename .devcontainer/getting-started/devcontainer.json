@@ -1,0 +1,48 @@
+{
+    "name": "Drasi .NET — Getting Started Tutorial",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "29",
+            "moby": false
+        },
+        "ghcr.io/devcontainers/features/rust:1": {}
+    },
+    "postCreateCommand": "bash ../../.devcontainer/getting-started/post-create.sh",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}/tutorials/getting-started",
+    "runArgs": [
+        "--privileged",
+        "--init",
+        "--ipc=host"
+    ],
+    "forwardPorts": [
+        9100,
+        5832
+    ],
+    "portsAttributes": {
+        "9100": {
+            "label": "HTTP source (location events)",
+            "onAutoForward": "silent"
+        },
+        "5832": {
+            "label": "PostgreSQL",
+            "onAutoForward": "silent"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "humao.rest-client"
+            ],
+            "settings": {
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "containerEnv": {
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5832",
+        "POSTGRES_HOST_PORT": "5832",
+        "HTTP_SOURCE_PORT": "9100"
+    }
+}

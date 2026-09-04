@@ -4,6 +4,11 @@
     <Project Path="examples/Plugins/Plugins.csproj" />
     <Project Path="examples/Hosted/Hosted.csproj" />
   </Folder>
+  <Folder Name="/tutorials/">
+    <Project Path="tutorials/getting-started/GettingStarted.csproj" />
+    <Project Path="tutorials/building-comfort/BuildingComfort.csproj" />
+    <Project Path="tutorials/curbside-pickup/CurbsidePickup.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Drasi/Drasi.csproj" />
   </Folder>

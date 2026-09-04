@@ -1,0 +1,48 @@
+{
+    "name": "Drasi .NET — Building Comfort Tutorial",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "29",
+            "moby": false
+        },
+        "ghcr.io/devcontainers/features/rust:1": {}
+    },
+    "postCreateCommand": "bash ../../.devcontainer/building-comfort/post-create.sh",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}/tutorials/building-comfort",
+    "runArgs": [
+        "--privileged",
+        "--init",
+        "--ipc=host"
+    ],
+    "forwardPorts": [
+        3000,
+        5833
+    ],
+    "portsAttributes": {
+        "3000": {
+            "label": "Comfort UI",
+            "onAutoForward": "notify"
+        },
+        "5833": {
+            "label": "PostgreSQL",
+            "onAutoForward": "silent"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "humao.rest-client"
+            ],
+            "settings": {
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "containerEnv": {
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5833",
+        "POSTGRES_HOST_PORT": "5833",
+        "WEB_PORT": "3000"
+    }
+}
