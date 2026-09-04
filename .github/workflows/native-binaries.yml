@@ -70,15 +70,15 @@ jobs:
       - name: Stage RID layout
         shell: bash
         run: |
-          mkdir -p staging/${{ matrix.rid }}/native
+          mkdir -p staging/runtimes/${{ matrix.rid }}/native
           src="native/target/${{ matrix.rust_target }}/release/${{ matrix.artifact }}"
-          cp "$src" "staging/${{ matrix.rid }}/native/${{ matrix.artifact }}"
-          ls -la "staging/${{ matrix.rid }}/native"
+          cp "$src" "staging/runtimes/${{ matrix.rid }}/native/${{ matrix.artifact }}"
+          ls -la "staging/runtimes/${{ matrix.rid }}/native"
 
       - uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.rid }}
-          path: staging/${{ matrix.rid }}
+          path: staging
           if-no-files-found: error
 
   pack:
@@ -116,8 +116,9 @@ jobs:
         run: |
           mkdir -p nupkgs
           dotnet pack src/Drasi/Drasi.csproj -c Release -o nupkgs \
-            -p:NativeAssetsDir=$(pwd)/artifacts \
+            -p:NativeAssetsDir=$(pwd)/artifacts/runtimes \
             -p:Version=${{ steps.version.outputs.version }}
+          unzip -l nupkgs/*.nupkg | grep -E 'runtimes/|drasi_ffi' || true
 
       - uses: actions/upload-artifact@v4
         with:

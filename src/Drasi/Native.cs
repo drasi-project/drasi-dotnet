@@ -372,8 +372,10 @@ internal static partial class Native
         var baseDir = AppContext.BaseDirectory;
         yield return Path.Combine(baseDir, fileName);
 
-        var rid = RuntimeInformation.RuntimeIdentifier;
-        yield return Path.Combine(baseDir, "runtimes", rid, "native", fileName);
+        foreach (var rid in RidFallbacks())
+        {
+            yield return Path.Combine(baseDir, "runtimes", rid, "native", fileName);
+        }
 
         var dir = new DirectoryInfo(baseDir);
         while (dir is not null)
@@ -381,6 +383,21 @@ internal static partial class Native
             yield return Path.Combine(dir.FullName, "native", "target", "release", fileName);
             yield return Path.Combine(dir.FullName, "native", "target", "debug", fileName);
             dir = dir.Parent;
+        }
+    }
+
+    private static IEnumerable<string> RidFallbacks()
+    {
+        var rid = RuntimeInformation.RuntimeIdentifier;
+        yield return rid;
+
+        var dash = rid.IndexOf('-');
+        if (dash > 0)
+        {
+            var os = rid[..dash];
+            var arch = rid[(dash + 1)..];
+            var osName = os.Split('.')[0];
+            yield return $"{osName}-{arch}";
         }
     }
 }
