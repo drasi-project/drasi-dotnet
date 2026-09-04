@@ -1,0 +1,26 @@
+# Rust
+/native/target/
+**/*.rs.bk
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Native artifacts copied next to samples
+*.dylib
+*.so
+*.dll
+!LICENSE
+
+# Pack / test output
+/nupkgs/
+/artifacts/
+TestResults/

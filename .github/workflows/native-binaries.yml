@@ -1,0 +1,175 @@
+# Produce RID-specific native libraries and pack them into the Drasi nupkg.
+#
+# Every target is built on a matching native runner (no cross-compilation).
+# The Linux jobs are pinned to Ubuntu 22.04 (glibc 2.35) to lower the glibc
+# floor for the prebuilt binaries.
+#
+# workflow_dispatch and PRs build + pack + verify load. Publishing to nuget.org
+# is team#134.
+
+name: Native binaries
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: native-binaries-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: windows-latest
+            rid: win-x64
+            rust_target: x86_64-pc-windows-msvc
+            artifact: drasi_ffi.dll
+          - host: ubuntu-22.04
+            rid: linux-x64
+            rust_target: x86_64-unknown-linux-gnu
+            artifact: libdrasi_ffi.so
+          - host: ubuntu-22.04-arm
+            rid: linux-arm64
+            rust_target: aarch64-unknown-linux-gnu
+            artifact: libdrasi_ffi.so
+          - host: macos-13
+            rid: osx-x64
+            rust_target: x86_64-apple-darwin
+            artifact: libdrasi_ffi.dylib
+          - host: macos-14
+            rid: osx-arm64
+            rust_target: aarch64-apple-darwin
+            artifact: libdrasi_ffi.dylib
+    runs-on: ${{ matrix.host }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install libclang for rocksdb bindgen (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang libclang-dev
+      - name: Point bindgen at LLVM (Windows)
+        if: runner.os == 'Windows'
+        run: echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Build native library
+        run: cargo build --release --manifest-path native/Cargo.toml --target ${{ matrix.rust_target }}
+
+      - name: Stage RID layout
+        shell: bash
+        run: |
+          mkdir -p staging/${{ matrix.rid }}/native
+          src="native/target/${{ matrix.rust_target }}/release/${{ matrix.artifact }}"
+          cp "$src" "staging/${{ matrix.rid }}/native/${{ matrix.artifact }}"
+          ls -la "staging/${{ matrix.rid }}/native"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.rid }}
+          path: staging/${{ matrix.rid }}
+          if-no-files-found: error
+
+  pack:
+    name: Pack NuGet
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: native-*
+          merge-multiple: true
+
+      - name: Show staged runtimes
+        run: find artifacts -type f | sort
+
+      - name: Pack
+        run: |
+          mkdir -p nupkgs
+          dotnet pack src/Drasi/Drasi.csproj -c Release -o nupkgs \
+            -p:NativeAssetsDir=$(pwd)/artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget
+          path: nupkgs/*.nupkg
+          if-no-files-found: error
+
+  verify-load:
+    name: Verify load ${{ matrix.rid }}
+    needs: pack
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: windows-latest
+            rid: win-x64
+          - host: ubuntu-22.04
+            rid: linux-x64
+          - host: ubuntu-22.04-arm
+            rid: linux-arm64
+          - host: macos-13
+            rid: osx-x64
+          - host: macos-14
+            rid: osx-arm64
+    runs-on: ${{ matrix.host }}
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget
+          path: nupkgs
+
+      - name: Consume package without a Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p consume
+          cat > consume/Consume.csproj <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>net8.0</TargetFramework>
+              <RollForward>LatestMajor</RollForward>
+              <ImplicitUsings>enable</ImplicitUsings>
+              <Nullable>enable</Nullable>
+            </PropertyGroup>
+          </Project>
+          EOF
+          cat > consume/Program.cs <<'EOF'
+          using Drasi;
+          var engine = await Engine.CreateAsync("nuget-load");
+          Console.WriteLine(engine.Id);
+          await engine.DisposeAsync();
+          EOF
+          cat > nuget.config <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="local" value="./nupkgs" />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          EOF
+          dotnet add consume/Consume.csproj package Drasi --version 0.1.0
+          dotnet run --project consume/Consume.csproj -c Release
