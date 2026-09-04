@@ -20,5 +20,7 @@ the [Drasi](https://drasi.io) continuous-query engine in your application.
 - **[Guides](guides/).** Task-focused walkthroughs: generic host, in-process
   sources and reactions, plugins, streaming, configuration, and errors.
 - **[API reference](api/).** Every method on the `Engine` class.
+- **[Tutorials](tutorials/).** Hands-on apps you can run: Getting Started,
+  Building Comfort, and Curbside Pickup.
 - **[Examples](examples/).** The Quickstart, Hosted, and Plugins samples in this
   repository.
