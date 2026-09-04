@@ -55,7 +55,7 @@ defaultContentLanguageInSubdir = false
 [module]
   [module.hugoVersion]
     extended = true
-    min = "0.110.0"
+    min = "0.152.2"
 
 # UI customization
 [params]

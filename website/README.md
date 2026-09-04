@@ -22,8 +22,8 @@ website/
 
 - **Hugo extended**, v0.152.2 or newer (the theme's SCSS pipeline requires the
   *extended* build).
-- **Node.js 18+**. Docsy pulls Bootstrap and Font Awesome from npm and runs its
-  assets through PostCSS.
+- **Node.js 22** or newer (the docs workflow uses 22). Docsy pulls Bootstrap
+  and Font Awesome from npm and runs its assets through PostCSS.
 - The **Docsy submodule** must be checked out. If you cloned without
   `--recurse-submodules`:
 
