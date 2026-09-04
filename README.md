@@ -5,9 +5,7 @@ Embed the [Drasi](https://drasi.io) continuous-query engine in .NET.
 A Rust `cdylib` hosts `drasi-lib` behind a small C ABI. C# binds it with
 `[LibraryImport]` and wraps it in an idiomatic façade (`IAsyncDisposable`,
 `IAsyncEnumerable`, typed errors). See
-[docs/interop-decision.md](docs/interop-decision.md) for why that shape was
-chosen, and [docs/api-reference.md](docs/api-reference.md) for the public API
-and remaining gaps.
+[docs/api-reference.md](docs/api-reference.md) for the public API.
 
 ## Requirements
 
@@ -140,7 +138,6 @@ examples/Plugins/       Install source/mock + reaction/log from ghcr.io
 examples/Hosted/        Generic host; configure topology in AddDrasi
 tests/Drasi.Tests/      Public API tests
 docs/api-reference.md   API surface + gap audit
-docs/interop-decision.md
 ```
 
 ## License
