@@ -32,10 +32,14 @@ Do this once, before the first `v*` tag.
    - **Repository:** `drasi-dotnet`
    - **Workflow File:** `native-binaries.yml` (file name only)
    - **Environment:** `nuget`
-3. In this GitHub repo:
-   - Settings → Variables → `NUGET_USER` = the nuget.org **username** (profile
-     name, not email).
-   - Settings → Environments → create `nuget` (optional reviewers/wait timer).
+3. In this GitHub repo (you need **admin** on the repo, or org owner):
+   - **Settings → Secrets and variables → Actions → Variables** (not Secrets).
+     Add `NUGET_USER` = the nuget.org **username** (profile name, not email).
+     Org-level: org **Settings → Secrets and variables → Actions → Variables**,
+     then grant this repo access.
+   - **Settings → Environments** → New environment → `nuget` (optional
+     reviewers/wait timer). Same page as Secrets if Environments is hidden:
+     it is a top-level Settings item, not under Variables.
 
 Until that policy exists, the publish job will fail at `NuGet/login`. Pack and
 verify-load still run on every tag.
