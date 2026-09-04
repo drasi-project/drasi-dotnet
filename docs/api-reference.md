@@ -86,9 +86,9 @@ are merged when the document does not already set those keys.
 middleware `Pipeline`. Joins, middleware declarations, auto-start, bootstrap,
 and queue capacities match the Python/Node host.
 
-**v1 query API (team#129):** string Cypher/GQL only. A LINQ / `IQueryable`
-provider is **deferred** — the research subtask is still open, and Python/Node
-ship string queries. A fluent builder is not in this package.
+**v1 query API (team#129):** string Cypher/GQL only. LINQ / `IQueryable` is
+**out of scope** — continuous-query semantics do not map cleanly onto LINQ, and
+Python/Node ship string queries. A fluent builder is not in this package.
 
 ---
 
@@ -188,7 +188,7 @@ surface (`drasi-host-sdk` / OCI), which the prototype explicitly left out.
 | G17 | Identity providers / secret stores | ✅ closed | Built-in password/token plus plugin kinds; `UseSecretStoreAsync`. |
 | G18 | Config-schema validation | ✅ closed | `Get*ConfigSchemaAsync` for source/reaction/bootstrap/secret-store kinds. |
 | G19 | Durable (checkpointed) C# reactions | ✅ closed | `AddDurableReactionAsync`; requires a redb `StateStore`. |
-| G20 | LINQ / `IQueryable` query API | ⏸ deferred | team#129 is still open. v1 is string Cypher/GQL, matching Python/Node. |
+| G20 | LINQ / `IQueryable` query API | ✅ closed (won't do) | team#129: string Cypher/GQL only. LINQ is not a follow-on for this epic. |
 | G21 | nuget.org publish / versioning / changelog | ⏸ deferred | team#134. This repo packs locally and in CI; it does not push. |
 
 ---
@@ -196,6 +196,6 @@ surface (`drasi-host-sdk` / OCI), which the prototype explicitly left out.
 ## Follow-ups already tracked
 
 - Plugin host + OCI: new work after G14, not a silent hole.
-- LINQ: [team#129](https://github.com/drasi-project/team/issues/129).
+- LINQ: [team#129](https://github.com/drasi-project/team/issues/129) (resolved: string Cypher/GQL only).
 - NuGet release pipeline: [team#134](https://github.com/drasi-project/team/issues/134).
 - Automated tests covering the public API (this tree adds `tests/Drasi.Tests`; broader coverage is [team#139](https://github.com/drasi-project/team/issues/139)).
