@@ -46,7 +46,8 @@
   <ItemGroup Condition="'$(NativeAssetsDir)' != ''">
     <Content Include="$(NativeAssetsDir)\**\*">
       <Pack>true</Pack>
-      <PackagePath>runtimes</PackagePath>
+      <PackagePath>runtimes\%(RecursiveDir)</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
