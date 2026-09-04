@@ -4,20 +4,22 @@
 # The Linux jobs are pinned to Ubuntu 22.04 (glibc 2.35) to lower the glibc
 # floor for the prebuilt binaries.
 #
-# workflow_dispatch and PRs build + pack + verify load. Publishing to nuget.org
-# is team#134.
+# workflow_dispatch and PRs build + pack + verify load. A v*.*.* tag also
+# publishes to nuget.org (Trusted Publishing) and creates a GitHub Release.
 
 name: Native binaries
 
 on:
   push:
     branches: [main]
+    tags:
+      - "v*.*.*"
   pull_request:
   workflow_dispatch:
 
 concurrency:
   group: native-binaries-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 jobs:
   build:
@@ -83,6 +85,8 @@ jobs:
     name: Pack NuGet
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -99,16 +103,28 @@ jobs:
       - name: Show staged runtimes
         run: find artifacts -type f | sort
 
+      - name: Resolve package version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.1.0" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Pack
         run: |
           mkdir -p nupkgs
           dotnet pack src/Drasi/Drasi.csproj -c Release -o nupkgs \
-            -p:NativeAssetsDir=$(pwd)/artifacts
+            -p:NativeAssetsDir=$(pwd)/artifacts \
+            -p:Version=${{ steps.version.outputs.version }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: nuget
-          path: nupkgs/*.nupkg
+          path: |
+            nupkgs/*.nupkg
+            nupkgs/*.snupkg
           if-no-files-found: error
 
   verify-load:
@@ -171,5 +187,79 @@ jobs:
             </packageSources>
           </configuration>
           EOF
-          dotnet add consume/Consume.csproj package Drasi --version 0.1.0
+          dotnet add consume/Consume.csproj package Drasi --version ${{ needs.pack.outputs.version }}
           dotnet run --project consume/Consume.csproj -c Release
+
+  publish:
+    name: Publish nuget.org
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [pack, verify-load]
+    runs-on: ubuntu-latest
+    environment: nuget
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget
+          path: nupkgs
+
+      - name: Require NUGET_USER
+        run: |
+          if [ -z "${{ vars.NUGET_USER }}" ]; then
+            echo "Set repository variable NUGET_USER to the nuget.org username (not email)." >&2
+            exit 1
+          fi
+
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push nupkg and snupkg
+        run: |
+          shopt -s nullglob
+          packages=(nupkgs/*.nupkg nupkgs/*.snupkg)
+          if [ ${#packages[@]} -eq 0 ]; then
+            echo "no packages to push" >&2
+            exit 1
+          fi
+          dotnet nuget push "nupkgs/*.nupkg" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+          if compgen -G "nupkgs/*.snupkg" > /dev/null; then
+            dotnet nuget push "nupkgs/*.snupkg" \
+              --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          fi
+
+      - name: Release notes from CHANGELOG
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          version = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          text = Path("CHANGELOG.md").read_text()
+          pattern = rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)"
+          match = re.search(pattern, text, re.M | re.S)
+          notes = match.group(1).strip() if match else f"Drasi {version}"
+          Path("RELEASE_NOTES.md").write_text(notes + "\n")
+          PY
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" nupkgs/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file RELEASE_NOTES.md

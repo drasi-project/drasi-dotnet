@@ -189,7 +189,7 @@ surface (`drasi-host-sdk` / OCI), which the prototype explicitly left out.
 | G18 | Config-schema validation | ✅ closed | `Get*ConfigSchemaAsync` for source/reaction/bootstrap/secret-store kinds. |
 | G19 | Durable (checkpointed) C# reactions | ✅ closed | `AddDurableReactionAsync`; requires a redb `StateStore`. |
 | G20 | LINQ / `IQueryable` query API | ✅ closed (won't do) | team#129: string Cypher/GQL only. LINQ is not a follow-on for this epic. |
-| G21 | nuget.org publish / versioning / changelog | ⏸ deferred | team#134. This repo packs locally and in CI; it does not push. |
+| G21 | nuget.org publish / versioning / changelog | ✅ closed | Tag `v*.*.*` packs RID nupkgs, Trusted Publishing to nuget.org, CHANGELOG.md. |
 
 ---
 
@@ -197,5 +197,5 @@ surface (`drasi-host-sdk` / OCI), which the prototype explicitly left out.
 
 - Plugin host + OCI: new work after G14, not a silent hole.
 - LINQ: [team#129](https://github.com/drasi-project/team/issues/129) (resolved: string Cypher/GQL only).
-- NuGet release pipeline: [team#134](https://github.com/drasi-project/team/issues/134).
+- NuGet release pipeline: [team#134](https://github.com/drasi-project/team/issues/134) (tag + Trusted Publishing; see [releasing.md](releasing.md)).
 - Automated tests covering the public API (this tree adds `tests/Drasi.Tests`; broader coverage is [team#139](https://github.com/drasi-project/team/issues/139)).

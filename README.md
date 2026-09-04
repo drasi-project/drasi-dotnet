@@ -127,6 +127,8 @@ more specific type (`UnknownKindException`, `SourceException`, …).
 ```
 
 CI builds every declared RID and verifies the nupkg loads without Rust.
+Tagged releases (`vMAJOR.MINOR.PATCH`) publish to nuget.org. See
+[docs/releasing.md](docs/releasing.md).
 
 ## Layout
 
