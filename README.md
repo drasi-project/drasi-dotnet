@@ -1,11 +1,18 @@
 # drasi-dotnet
 
+[![docs](https://img.shields.io/badge/docs-drasi--project.github.io-blue)](https://drasi-project.github.io/drasi-dotnet/)
+
+**Documentation: <https://drasi-project.github.io/drasi-dotnet/>**
+Installation, concepts, the full API reference, guides, and runnable examples.
+
 Embed the [Drasi](https://drasi.io) continuous-query engine in .NET.
 
 A Rust `cdylib` hosts `drasi-lib` behind a small C ABI. C# binds it with
 `[LibraryImport]` and wraps it in an idiomatic façade (`IAsyncDisposable`,
-`IAsyncEnumerable`, typed errors). See
-[docs/api-reference.md](docs/api-reference.md) for the public API.
+`IAsyncEnumerable`, typed errors). See the
+[documentation site](https://drasi-project.github.io/drasi-dotnet/) for
+installation, concepts, and the public API. The in-repo
+[docs/api-reference.md](docs/api-reference.md) is a maintainer gap audit.
 
 ## Requirements
 
@@ -137,7 +144,8 @@ examples/Quickstart/    Console sample
 examples/Plugins/       Install source/mock + reaction/log from ghcr.io
 examples/Hosted/        Generic host; configure topology in AddDrasi
 tests/Drasi.Tests/      Public API tests
-docs/api-reference.md   API surface + gap audit
+docs/api-reference.md   Maintainer API gap audit
+website/                Hugo + Docsy docs site (GitHub Pages)
 ```
 
 ## License
