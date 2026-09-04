@@ -18,7 +18,7 @@
     <Copyright>Copyright 2026 The Drasi Authors</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/drasi-project/drasi-dotnet</PackageProjectUrl>
+    <PackageProjectUrl>https://drasi-project.github.io/drasi-dotnet/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/drasi-project/drasi-dotnet</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>drasi;continuous-query</PackageTags>
