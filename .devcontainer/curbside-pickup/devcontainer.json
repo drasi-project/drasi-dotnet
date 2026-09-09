@@ -1,7 +1,13 @@
 {
     "name": "Drasi .NET — Curbside Pickup Tutorial",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": ".."
+    },
     "features": {
+        "ghcr.io/devcontainers/features/dotnet:2": {
+            "version": "8.0"
+        },
         "ghcr.io/devcontainers/features/docker-in-docker:2": {
             "version": "29",
             "moby": false
@@ -37,13 +43,15 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "humao.rest-client"
+                "humao.rest-client",
+                "ms-dotnettools.csharp"
             ],
             "settings": {
                 "editor.formatOnSave": true
             }
         }
     },
+    "remoteUser": "vscode",
     "containerEnv": {
         "POSTGRES_HOST": "localhost",
         "POSTGRES_PORT": "5842",
