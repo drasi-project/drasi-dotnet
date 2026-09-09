@@ -1,4 +1,5 @@
 bin/
 obj/
+dotnet/
 plugins/
 .env
