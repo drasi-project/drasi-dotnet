@@ -93,7 +93,7 @@ explicitly (or use the link below).
    **Dev Containers: Reopen in Container**. When prompted for a configuration, choose
    **Drasi .NET — Curbside Pickup Tutorial**.
 
-3. Wait for the container to finish. Its setup script restores the tutorial project and builds the native library.
+3. Wait for the container to finish. Its setup script restores the tutorial project.
 
 That's it — skip ahead to [Step 2](#step-2-of-4-run-the-demo).
 
@@ -108,7 +108,7 @@ cd tutorials/curbside-pickup
 dotnet restore
 ```
 
-`Drasi` is consumed from this repository via a project reference. Build the native library once from the repo root (`cargo build --release --manifest-path native/Cargo.toml`) so `dotnet run` can load `libdrasi_ffi`. `./scripts/start-demo.sh` does that for you if the library is missing.
+`Drasi` ships prebuilt native binaries in the NuGet package, so there is no Rust toolchain to install. `dotnet restore` pulls `Drasi` 0.1.0 from nuget.org.
 
 ## Step 2 of 4: Run the Demo
 Everything runs from a single command. In your terminal, start the demo:

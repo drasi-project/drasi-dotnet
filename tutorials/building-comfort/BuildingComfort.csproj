@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Drasi" Version="0.1.0" />
     <PackageReference Include="Npgsql" Version="8.0.6" />
-    <ProjectReference Include="..\..\src\Drasi\Drasi.csproj" />
   </ItemGroup>
-
-  <Import Project="..\..\build\CopyNativeLibrary.targets" />
 </Project>

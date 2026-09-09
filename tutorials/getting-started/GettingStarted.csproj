@@ -10,10 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Drasi" Version="0.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <ProjectReference Include="..\..\src\Drasi\Drasi.csproj" />
     <None Update="locations.jsonl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <Import Project="..\..\build\CopyNativeLibrary.targets" />
 </Project>
