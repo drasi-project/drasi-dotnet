@@ -23,9 +23,6 @@ using Npgsql;
 const string Comfort =
     "floor( 50 + (r.temperature - 72) + (r.humidity - 42) + CASE WHEN r.co2 > 500 THEN (r.co2 - 500) / 25 ELSE 0 END )";
 
-var comfortable = new RoomReadings(70, 40, 10);
-var broken = new RoomReadings(40, 20, 700);
-
 var pgHost = Env("POSTGRES_HOST", "localhost");
 var pgPort = EnvInt("POSTGRES_PORT", 5833);
 var pgDatabase = Env("POSTGRES_DATABASE", "building_comfort");
@@ -162,7 +159,8 @@ var connectionString = new NpgsqlConnectionStringBuilder
     Password = pgPassword,
 }.ConnectionString;
 await using var db = NpgsqlDataSource.Create(connectionString);
-var simulator = new Simulator(db);
+var rooms = new RoomRepository(db);
+var simulator = new Simulator(rooms);
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -183,30 +181,13 @@ app.MapGet("/api/state", async () =>
 
 app.MapGet("/api/rooms", async () =>
 {
-    var rooms = new JsonArray();
-    await using var cmd = db.CreateCommand(
-        """SELECT id, name, temperature, humidity, co2, floor_id FROM "Room" ORDER BY id""");
-    await using var reader = await cmd.ExecuteReaderAsync();
-    while (await reader.ReadAsync())
-    {
-        rooms.Add(new JsonObject
-        {
-            ["id"] = reader.GetString(0),
-            ["name"] = reader.GetString(1),
-            ["temperature"] = reader.GetInt32(2),
-            ["humidity"] = reader.GetInt32(3),
-            ["co2"] = reader.GetInt32(4),
-            ["floor_id"] = reader.GetString(5),
-        });
-    }
-
     return Results.Json(new JsonObject
     {
-        ["rooms"] = rooms,
+        ["rooms"] = await rooms.ListAsync(),
         ["presets"] = new JsonObject
         {
-            ["COMFORTABLE"] = comfortable.ToJson(),
-            ["BROKEN"] = broken.ToJson(),
+            ["COMFORTABLE"] = RoomRepository.Comfortable.ToJson(),
+            ["BROKEN"] = RoomRepository.Broken.ToJson(),
         },
     });
 });
@@ -215,7 +196,7 @@ app.MapPost("/api/rooms/{id}", async (string id, RoomReadings body) =>
 {
     try
     {
-        return Results.Json(new JsonObject { ["room"] = await Rooms.Set(db, id, body) });
+        return Results.Json(new JsonObject { ["room"] = await rooms.SetAsync(id, body) });
     }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
     {
@@ -227,7 +208,7 @@ app.MapPost("/api/rooms/{id}/reset", async (string id) =>
 {
     try
     {
-        return Results.Json(new JsonObject { ["room"] = await Rooms.Set(db, id, comfortable) });
+        return Results.Json(new JsonObject { ["room"] = await rooms.ResetAsync(id) });
     }
     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
     {
@@ -237,12 +218,7 @@ app.MapPost("/api/rooms/{id}/reset", async (string id) =>
 
 app.MapPost("/api/reset", async () =>
 {
-    await using var cmd = db.CreateCommand(
-        """UPDATE "Room" SET temperature = $1, humidity = $2, co2 = $3""");
-    cmd.Parameters.AddWithValue(comfortable.Temperature);
-    cmd.Parameters.AddWithValue(comfortable.Humidity);
-    cmd.Parameters.AddWithValue(comfortable.Co2);
-    var count = await cmd.ExecuteNonQueryAsync();
+    var count = await rooms.ResetAllAsync();
     return Results.Json(new { reset = count });
 });
 
@@ -405,121 +381,7 @@ static async Task WaitForPortAsync(string host, int port, string label, int atte
         $"{label} is not reachable at {host}:{port}. Start it with './scripts/setup-database.sh'.");
 }
 
-sealed record RoomReadings(int Temperature, int Humidity, int Co2)
-{
-    public JsonObject ToJson() => new()
-    {
-        ["temperature"] = Temperature,
-        ["humidity"] = Humidity,
-        ["co2"] = Co2,
-    };
-}
-
 sealed record SimulateRequest(bool Enabled);
-
-static class Rooms
-{
-    public static async Task<JsonObject> Set(NpgsqlDataSource data, string id, RoomReadings readings)
-    {
-        if (!System.Text.RegularExpressions.Regex.IsMatch(id, "^[A-Za-z0-9_]+$"))
-        {
-            throw new ArgumentException($"invalid room id '{id}' (expected letters, digits, underscores)");
-        }
-
-        await using var cmd = data.CreateCommand(
-            """
-            UPDATE "Room" SET temperature = $1, humidity = $2, co2 = $3 WHERE id = $4
-            RETURNING id, name, temperature, humidity, co2
-            """);
-        cmd.Parameters.AddWithValue(readings.Temperature);
-        cmd.Parameters.AddWithValue(readings.Humidity);
-        cmd.Parameters.AddWithValue(readings.Co2);
-        cmd.Parameters.AddWithValue(id);
-        await using var reader = await cmd.ExecuteReaderAsync();
-        if (!await reader.ReadAsync())
-        {
-            throw new InvalidOperationException($"no room with id '{id}'");
-        }
-
-        return new JsonObject
-        {
-            ["id"] = reader.GetString(0),
-            ["name"] = reader.GetString(1),
-            ["temperature"] = reader.GetInt32(2),
-            ["humidity"] = reader.GetInt32(3),
-            ["co2"] = reader.GetInt32(4),
-        };
-    }
-}
-
-sealed class Simulator(NpgsqlDataSource data)
-{
-    private CancellationTokenSource? _cts;
-    public bool IsRunning => _cts is not null;
-
-    public async Task StartAsync()
-    {
-        if (_cts is not null)
-        {
-            return;
-        }
-
-        var ids = new List<string>();
-        await using (var cmd = data.CreateCommand("""SELECT id FROM "Room" ORDER BY id"""))
-        await using (var reader = await cmd.ExecuteReaderAsync())
-        {
-            while (await reader.ReadAsync())
-            {
-                ids.Add(reader.GetString(0));
-            }
-        }
-
-        _cts = new CancellationTokenSource();
-        var token = _cts.Token;
-        _ = Task.Run(async () =>
-        {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
-            var random = new Random();
-            try
-            {
-                while (await timer.WaitForNextTickAsync(token))
-                {
-                    var id = ids[random.Next(ids.Count)];
-                    var readings = new RoomReadings(
-                        55 + random.Next(31),
-                        20 + random.Next(36),
-                        5 + random.Next(900));
-                    try
-                    {
-                        await Rooms.Set(data, id, readings);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.Error.WriteLine($"[simulate] {ex.Message}");
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // stopped
-            }
-        }, token);
-        Console.WriteLine($"[simulate] started ({ids.Count} rooms, every 3000ms)");
-    }
-
-    public void Stop()
-    {
-        if (_cts is null)
-        {
-            return;
-        }
-
-        _cts.Cancel();
-        _cts.Dispose();
-        _cts = null;
-        Console.WriteLine("[simulate] stopped");
-    }
-}
 
 sealed class SseHub
 {

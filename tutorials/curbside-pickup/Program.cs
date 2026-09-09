@@ -186,6 +186,8 @@ await using var mysqlDb = new MySqlDataSource(new MySqlConnectionStringBuilder
     Server = myHost, Port = (uint)myPort, Database = myDatabase, UserID = myUser, Password = myPassword,
     SslMode = MySqlSslMode.Disabled,
 }.ConnectionString);
+var orders = new OrderRepository(pgDb, sqlLog);
+var vehicles = new VehicleRepository(mysqlDb, sqlLog);
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -214,7 +216,7 @@ app.MapPost("/api/orders/{id}/toggle", async (int id) =>
     {
         return Results.Json(new JsonObject
         {
-            ["order"] = await ToggleOrder(pgDb, sqlLog, id),
+            ["order"] = await orders.ToggleAsync(id),
             ["log"] = sqlLog.ToJson(),
         });
     }
@@ -230,7 +232,7 @@ app.MapPost("/api/vehicles/{plate}/toggle", async (string plate) =>
     {
         return Results.Json(new JsonObject
         {
-            ["vehicle"] = await ToggleVehicle(mysqlDb, sqlLog, plate),
+            ["vehicle"] = await vehicles.ToggleAsync(plate),
             ["log"] = sqlLog.ToJson(),
         });
     }
@@ -242,19 +244,8 @@ app.MapPost("/api/vehicles/{plate}/toggle", async (string plate) =>
 
 app.MapPost("/api/reset", async () =>
 {
-    sqlLog.Add("PostgreSQL", "UPDATE orders SET status='preparing';");
-    await using (var cmd = pgDb.CreateCommand("UPDATE orders SET status = 'preparing'"))
-    {
-        await cmd.ExecuteNonQueryAsync();
-    }
-
-    sqlLog.Add("MySQL", "UPDATE vehicles SET location='Parking';");
-    await using (var cmd = mysqlDb.CreateCommand())
-    {
-        cmd.CommandText = "UPDATE vehicles SET location = 'Parking'";
-        await cmd.ExecuteNonQueryAsync();
-    }
-
+    await orders.ResetAllAsync();
+    await vehicles.ResetAllAsync();
     return Results.Json(new JsonObject { ["ok"] = true, ["log"] = sqlLog.ToJson() });
 });
 
@@ -304,51 +295,6 @@ static async Task PingAsync(HttpContext ctx, PeriodicTimer timer, CancellationTo
     {
     }
 }
-
-static async Task<JsonObject> ToggleOrder(NpgsqlDataSource data, SqlLog log, int id)
-{
-    await using var lookup = data.CreateCommand("SELECT id, status FROM orders WHERE id = $1");
-    lookup.Parameters.AddWithValue(id);
-    await using var reader = await lookup.ExecuteReaderAsync();
-    if (!await reader.ReadAsync())
-    {
-        throw new InvalidOperationException($"no order with id '{id}'");
-    }
-
-    var status = reader.GetString(1) == "ready" ? "preparing" : "ready";
-    await reader.CloseAsync();
-    log.Add("PostgreSQL", $"UPDATE orders SET status={Lit(status)} WHERE id={id};");
-    await using var update = data.CreateCommand("UPDATE orders SET status = $1 WHERE id = $2");
-    update.Parameters.AddWithValue(status);
-    update.Parameters.AddWithValue(id);
-    await update.ExecuteNonQueryAsync();
-    return new JsonObject { ["id"] = id, ["status"] = status };
-}
-
-static async Task<JsonObject> ToggleVehicle(MySqlDataSource data, SqlLog log, string plate)
-{
-    await using var conn = await data.OpenConnectionAsync();
-    await using var lookup = conn.CreateCommand();
-    lookup.CommandText = "SELECT plate, location FROM vehicles WHERE plate = @plate";
-    lookup.Parameters.AddWithValue("@plate", plate);
-    await using var reader = await lookup.ExecuteReaderAsync();
-    if (!await reader.ReadAsync())
-    {
-        throw new InvalidOperationException($"no vehicle with plate '{plate}'");
-    }
-
-    var location = reader.GetString(1) == "Curbside" ? "Parking" : "Curbside";
-    await reader.CloseAsync();
-    log.Add("MySQL", $"UPDATE vehicles SET location={Lit(location)} WHERE plate={Lit(plate)};");
-    await using var update = conn.CreateCommand();
-    update.CommandText = "UPDATE vehicles SET location = @location WHERE plate = @plate";
-    update.Parameters.AddWithValue("@location", location);
-    update.Parameters.AddWithValue("@plate", plate);
-    await update.ExecuteNonQueryAsync();
-    return new JsonObject { ["plate"] = plate, ["location"] = location };
-}
-
-static string Lit(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
 
 static async Task<JsonArray> Snapshot(Engine engine, string queryId, Dictionary<string, string> shape)
 {
@@ -446,43 +392,6 @@ static async Task WaitForPortAsync(string host, int port, string label, int atte
 
     throw new InvalidOperationException(
         $"{label} is not reachable at {host}:{port}. Start it with './scripts/setup-database.sh'.");
-}
-
-sealed class SqlLog
-{
-    private readonly List<JsonObject> _entries = [];
-    private readonly object _gate = new();
-
-    public void Add(string db, string text)
-    {
-        lock (_gate)
-        {
-            _entries.Add(new JsonObject
-            {
-                ["db"] = db,
-                ["text"] = text,
-                ["t"] = DateTime.UtcNow.ToString("O"),
-            });
-            while (_entries.Count > 25)
-            {
-                _entries.RemoveAt(0);
-            }
-        }
-    }
-
-    public JsonArray ToJson()
-    {
-        lock (_gate)
-        {
-            var array = new JsonArray();
-            foreach (var entry in _entries)
-            {
-                array.Add(entry.DeepClone());
-            }
-
-            return array;
-        }
-    }
 }
 
 sealed class SseHub
