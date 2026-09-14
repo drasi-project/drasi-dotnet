@@ -29,8 +29,8 @@ use crate::components::{
     BoxedReaction, BoxedSource, CsharpReaction, CsharpSource, ReactionCallback, SharedSource,
 };
 use crate::conversions::{
-    build_query, json_to_source_change, parse_query_options, parse_source_subscriptions,
-    parse_string_list, status_json,
+    bootstrap_kind_from, build_query, json_to_source_change, parse_query_options,
+    parse_source_subscriptions, parse_string_list, status_json,
 };
 use crate::error::{ErrorCode, FfiError, FfiResult};
 use crate::plugins::PluginHost;
@@ -988,15 +988,7 @@ pub async fn add_plugin_source(
     if let Some(bootstrap_json) = bootstrap_json {
         let bootstrap: Value = serde_json::from_str(bootstrap_json)
             .map_err(|err| FfiError::config(format!("bootstrap is not valid JSON: {err}")))?;
-        let bootstrap_kind = bootstrap
-            .get("kind")
-            .and_then(Value::as_str)
-            .ok_or_else(|| {
-                FfiError::new(
-                    ErrorCode::BootstrapKindRequired,
-                    "bootstrap requires a 'kind'",
-                )
-            })?;
+        let bootstrap_kind = bootstrap_kind_from(&bootstrap)?;
         let mut bootstrap_config = bootstrap.clone();
         if let Some(map) = bootstrap_config.as_object_mut() {
             map.remove("kind");

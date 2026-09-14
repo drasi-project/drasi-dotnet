@@ -297,4 +297,78 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn ffi_error_constructors_preserve_codes() {
+        assert_eq!(FfiError::engine("boom").code, ErrorCode::EngineFailure);
+        assert_eq!(FfiError::closed("x").code, ErrorCode::EngineClosed);
+        assert_eq!(FfiError::config("nope").code, ErrorCode::ConfigInvalid);
+        assert_eq!(FfiError::plugin("missing").code, ErrorCode::PluginNotFound);
+        assert_eq!(
+            FfiError::incompatible("abi").code,
+            ErrorCode::PluginIncompatible
+        );
+        assert_eq!(
+            FfiError::unknown_kind(ErrorCode::UnknownSourceKind, "source", "x").code,
+            ErrorCode::UnknownSourceKind
+        );
+        assert_eq!(
+            FfiError::from("x".to_string()).code,
+            ErrorCode::EngineFailure
+        );
+        assert_eq!(
+            FfiError::new(ErrorCode::StreamLagged, "lag").to_string(),
+            "lag"
+        );
+        assert_eq!(
+            FfiError::new(ErrorCode::PluginSignatureInvalid, "sig").code,
+            ErrorCode::PluginSignatureInvalid
+        );
+    }
+
+    #[test]
+    fn last_error_round_trips_and_clears() {
+        set_error(&FfiError::new(ErrorCode::ConfigInvalid, "bad\0config"));
+        unsafe {
+            let code = std::ffi::CStr::from_ptr(drasi_last_error_code())
+                .to_str()
+                .unwrap();
+            let message = std::ffi::CStr::from_ptr(drasi_last_error())
+                .to_str()
+                .unwrap();
+            assert_eq!(code, "CONFIG_INVALID");
+            assert_eq!(message, "badconfig");
+        }
+        clear_last_error();
+        assert!(drasi_last_error().is_null());
+        assert!(drasi_last_error_code().is_null());
+        set_last_error("plain");
+        unsafe {
+            assert_eq!(
+                std::ffi::CStr::from_ptr(drasi_last_error())
+                    .to_str()
+                    .unwrap(),
+                "plain"
+            );
+        }
+    }
+
+    #[test]
+    fn utf8_helpers_reject_null_and_free_allocations() {
+        unsafe {
+            let err = read_utf8(std::ptr::null(), "name").unwrap_err();
+            assert_eq!(err.code, ErrorCode::ConfigInvalid);
+            assert!(read_utf8_opt(std::ptr::null()).unwrap().is_none());
+            let empty = std::ffi::CString::new("").unwrap();
+            assert!(read_utf8_opt(empty.as_ptr()).unwrap().is_none());
+            let value = std::ffi::CString::new("ok").unwrap();
+            assert_eq!(read_utf8(value.as_ptr(), "name").unwrap(), "ok");
+            assert_eq!(read_utf8_opt(value.as_ptr()).unwrap(), Some("ok"));
+        }
+        let ptr = alloc_utf8("hello");
+        assert!(!ptr.is_null());
+        unsafe { drasi_string_free(ptr) };
+        unsafe { drasi_string_free(std::ptr::null_mut()) };
+        assert!(alloc_utf8("nul\0inside").is_null());
+    }
 }
