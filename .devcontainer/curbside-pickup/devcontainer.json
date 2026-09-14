@@ -1,0 +1,60 @@
+{
+    "name": "Drasi .NET — Curbside Pickup Tutorial",
+    "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/dotnet:2": {
+            "version": "8.0"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "29",
+            "moby": false
+        }
+    },
+    "postCreateCommand": "bash ../../.devcontainer/curbside-pickup/post-create.sh",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}/tutorials/curbside-pickup",
+    "runArgs": [
+        "--privileged",
+        "--init",
+        "--ipc=host"
+    ],
+    "forwardPorts": [
+        3000,
+        5842,
+        3319
+    ],
+    "portsAttributes": {
+        "3000": {
+            "label": "Curbside UI",
+            "onAutoForward": "notify"
+        },
+        "5842": {
+            "label": "PostgreSQL",
+            "onAutoForward": "silent"
+        },
+        "3319": {
+            "label": "MySQL",
+            "onAutoForward": "silent"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "humao.rest-client",
+                "ms-dotnettools.csharp"
+            ],
+            "settings": {
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "remoteUser": "vscode",
+    "containerEnv": {
+        "POSTGRES_HOST": "localhost",
+        "POSTGRES_PORT": "5842",
+        "POSTGRES_HOST_PORT": "5842",
+        "MYSQL_HOST": "localhost",
+        "MYSQL_PORT": "3319",
+        "MYSQL_HOST_PORT": "3319",
+        "WEB_PORT": "3000"
+    }
+}

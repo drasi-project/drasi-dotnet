@@ -1,0 +1,74 @@
+# Copyright 2026 The Drasi Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: curbside-pickup-dotnet
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: curbside-pickup-dotnet-postgres
+    environment:
+      POSTGRES_DB: RetailOperations
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_admin
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_replication_slots=10"
+      - "-c"
+      - "max_wal_senders=10"
+    ports:
+      - "${POSTGRES_HOST_PORT:-5842}:5432"
+    volumes:
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql:ro
+      - curbside_dotnet_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres -d RetailOperations"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    container_name: curbside-pickup-dotnet-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root_admin}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-PhysicalOperations}"
+      MYSQL_USER: "${MYSQL_USER:-drasi_user}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-drasi_password}"
+    command:
+      - "--server-id=1"
+      - "--log-bin=mysql-bin"
+      - "--binlog-format=ROW"
+      - "--binlog-row-image=FULL"
+      - "--binlog-row-metadata=FULL"
+      - "--gtid-mode=ON"
+      - "--enforce-gtid-consistency=ON"
+    ports:
+      - "${MYSQL_HOST_PORT:-3319}:3306"
+    volumes:
+      - ./mysql-init.sql:/docker-entrypoint-initdb.d/mysql-init.sql:ro
+      - curbside_dotnet_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  curbside_dotnet_postgres_data:
+  curbside_dotnet_mysql_data:

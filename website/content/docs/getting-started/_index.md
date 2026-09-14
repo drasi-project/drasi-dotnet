@@ -128,4 +128,6 @@ repository, or add a project reference to `src/Drasi/Drasi.csproj` after
 - [Use the generic host](../guides/hosting/) shows `AddDrasi` for worker
   services and ASP.NET Core.
 - [API reference](../api/) lists every method on `Engine`.
+- [Tutorials](../tutorials/) walk through PostgreSQL CDC, ASP.NET Core, and
+  cross-database joins.
 - [Examples](../examples/) points at Quickstart, Hosted, and Plugins.

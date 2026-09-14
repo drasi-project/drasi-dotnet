@@ -1,0 +1,5 @@
+bin/
+obj/
+plugins/
+.env
+dotnet/

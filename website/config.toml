@@ -57,6 +57,18 @@ defaultContentLanguageInSubdir = false
     extended = true
     min = "0.152.2"
 
+  # Tutorials are authored under ../tutorials/<name>/_index.md and mounted into
+  # the docs content tree. Adding a content mount disables Hugo's implicit
+  # content -> content default, so it is re-declared here.
+  [[module.mounts]]
+    source = "content"
+    target = "content"
+
+  [[module.mounts]]
+    source = "../tutorials"
+    target = "content/docs/tutorials"
+    includeFiles = ["**/_index.md", "**/images/**"]
+
 # UI customization
 [params]
   # Built-in (offline) lunr.js search. No external service required.

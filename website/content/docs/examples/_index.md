@@ -7,7 +7,8 @@ description: >
 ---
 
 The repository ships three runnable examples. Each is a small console app that
-demonstrates a different slice of `Drasi`.
+demonstrates a different slice of `Drasi`. For longer, scenario-based walkthroughs
+with live databases and UIs, see the [tutorials](../tutorials/).
 
 Build the native library once, then run any sample:
 
