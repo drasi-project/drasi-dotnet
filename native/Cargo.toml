@@ -10,7 +10,7 @@ publish = false
 
 [lib]
 name = "drasi_ffi"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # These versions match drasi-python / drasi-nodejs. The Drasi workspace versions

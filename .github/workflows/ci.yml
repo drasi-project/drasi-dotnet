@@ -49,3 +49,44 @@ jobs:
 
       - name: .NET tests
         run: dotnet test tests/Drasi.Tests/Drasi.Tests.csproj -c Release --nologo
+
+  # Meaningful coverage for a native host lives in Rust marshalling/validation
+  # (conversions.rs + error.rs), matching Node/Python. The C# façade is gated
+  # with coverlet. Both are platform-independent, so a single-OS job is enough;
+  # the cross-platform behavioral guarantee stays with `dotnet test` above.
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install libclang for rocksdb bindgen
+        run: sudo apt-get update && sudo apt-get install -y clang libclang-dev
+
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Rust coverage gate (pure logic)
+        run: |
+          cargo llvm-cov --manifest-path native/Cargo.toml --lib \
+            --ignore-filename-regex '(engine|components|secrets|lib|plugins|logging|stores|streams|host)\.rs$' \
+            --fail-under-lines 90 \
+            --summary-only
+
+      - name: Native library
+        run: cargo build --release --manifest-path native/Cargo.toml
+
+      - name: .NET coverage gate
+        run: >
+          dotnet test tests/Drasi.Tests/Drasi.Tests.csproj -c Release --nologo
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=cobertura
+          /p:ExcludeByFile="**/Native.cs"
+          /p:Threshold=85
+          /p:ThresholdType=line
