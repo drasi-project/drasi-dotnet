@@ -24,23 +24,16 @@ public sealed class StreamingTests
     public async Task AllEventsEmitsLifecycleTransitions()
     {
         await using var engine = await Engine.CreateAsync(TestEngine.Id("events"));
-        var seen = new TaskCompletionSource<ComponentEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var consume = Task.Run(async () =>
-        {
-            await foreach (var evt in engine.AllEventsAsync())
-            {
-                if (evt.Status == ComponentStatus.Running)
-                {
-                    seen.TrySetResult(evt);
-                    break;
-                }
-            }
-        });
-
+        await engine.AddSourceAsync("orders");
         await engine.StartAsync();
-        var evt = await seen.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await TestEngine.WaitUntilAsync(
+            () => engine.GetSourceStatusAsync("orders"),
+            status => status == ComponentStatus.Running);
+        await using var stream = new StartedStream<ComponentEvent>(engine.AllEventsAsync());
+        var evt = await stream.WaitForAsync(item =>
+            item.Status == ComponentStatus.Running && item.ComponentId == "orders");
         Assert.Equal(ComponentStatus.Running, evt.Status);
-        await consume.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("orders", evt.ComponentId);
     }
 
     [Fact]
@@ -54,31 +47,13 @@ public sealed class StreamingTests
             ["orders"],
             new QueryOptions { AutoStart = false });
 
-        var sourceSeen = new TaskCompletionSource<ComponentEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var querySeen = new TaskCompletionSource<ComponentEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var sourceConsume = Task.Run(async () =>
-        {
-            await foreach (var evt in engine.SourceEventsAsync("orders"))
-            {
-                sourceSeen.TrySetResult(evt);
-                break;
-            }
-        });
-        var queryConsume = Task.Run(async () =>
-        {
-            await foreach (var evt in engine.QueryEventsAsync("q"))
-            {
-                querySeen.TrySetResult(evt);
-                break;
-            }
-        });
+        await using var sourceStream = new StartedStream<ComponentEvent>(engine.SourceEventsAsync("orders"));
+        await using var queryStream = new StartedStream<ComponentEvent>(engine.QueryEventsAsync("q"));
 
         await engine.StartSourceAsync("orders");
         await engine.StartQueryAsync("q");
-        await sourceSeen.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        await querySeen.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        await sourceConsume.WaitAsync(TimeSpan.FromSeconds(5));
-        await queryConsume.WaitAsync(TimeSpan.FromSeconds(5));
+        await sourceStream.WaitForAsync(evt => evt.Status == ComponentStatus.Running);
+        await queryStream.WaitForAsync(evt => evt.Status == ComponentStatus.Running);
     }
 
     [Fact]
@@ -90,23 +65,13 @@ public sealed class StreamingTests
         await engine.WaitForQueryAsync("q");
         await engine.AddReactionAsync("watch", ["q"], _ => { }, autoStart: false);
 
-        var seen = new TaskCompletionSource<ComponentEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var consume = Task.Run(async () =>
-        {
-            await foreach (var evt in engine.ReactionEventsAsync("watch"))
-            {
-                seen.TrySetResult(evt);
-                break;
-            }
-        });
-
+        await using var stream = new StartedStream<ComponentEvent>(engine.ReactionEventsAsync("watch"));
         await engine.StartReactionAsync("watch");
-        await seen.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await stream.WaitForAsync(evt => evt.Status == ComponentStatus.Running);
         var metrics = await engine.GetReactionMetricsAsync("watch");
         Assert.NotNull(metrics);
         var lifecycle = await engine.GetLifecycleMetricsAsync();
-        Assert.True(lifecycle.StartupRejectionDurableNoStore == 0 || lifecycle.StartupRejectionDurableNoStore >= 0);
-        await consume.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(0UL, lifecycle.StartupRejectionDurableNoStore);
     }
 
     [Fact]
@@ -118,23 +83,8 @@ public sealed class StreamingTests
         await engine.WaitForQueryAsync("q");
 
         var types = new List<DiffType>();
-        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var consume = Task.Run(async () =>
-        {
-            await foreach (var evt in engine.QueryResultsAsync("q", "stream-diffs"))
-            {
-                foreach (var diff in evt.Results)
-                {
-                    types.Add(diff.Type);
-                }
-
-                if (types.Contains(DiffType.Add) && types.Contains(DiffType.Delete))
-                {
-                    done.TrySetResult();
-                    break;
-                }
-            }
-        });
+        await using var stream = new StartedStream<QueryResultEvent>(engine.QueryResultsAsync("q", "stream-diffs"));
+        await TestEngine.WaitForReactionAsync(engine, "stream-diffs");
 
         await engine.PushChangeAsync("orders", TestEngine.Order("o1", "open", 1));
         await engine.PushChangeAsync(
@@ -154,10 +104,22 @@ public sealed class StreamingTests
                 Id = "o1",
                 Labels = ["Order"],
             });
-        await done.Task.WaitAsync(TimeSpan.FromSeconds(15));
+        await stream.WaitForAsync(
+            evt =>
+            {
+                foreach (var diff in evt.Results)
+                {
+                    types.Add(diff.Type);
+                }
+
+                return types.Contains(DiffType.Add)
+                    && types.Contains(DiffType.Update)
+                    && types.Contains(DiffType.Delete);
+            },
+            TimeSpan.FromSeconds(15));
         Assert.Contains(DiffType.Add, types);
+        Assert.Contains(DiffType.Update, types);
         Assert.Contains(DiffType.Delete, types);
-        await consume.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -211,7 +173,7 @@ public sealed class StreamingTests
                 Properties = new JsonObject { ["id"] = "r1" },
                 EffectiveFrom = 1,
             });
-        var rows = await TestEngine.WaitForRowsAsync(engine, "q");
-        Assert.True(rows.Count >= 0);
+        var row = Assert.Single(await TestEngine.WaitForRowsAsync(engine, "q"));
+        Assert.Equal("r1", row["id"]?.ToString());
     }
 }

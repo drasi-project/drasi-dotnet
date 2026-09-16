@@ -92,6 +92,18 @@ internal static class TestEngine
         return value;
     }
 
+    internal static async Task WaitForReactionAsync(Engine engine, string id, TimeSpan? timeout = null)
+    {
+        var listed = await WaitUntilAsync(
+            () => engine.ListReactionsAsync(),
+            list => list.Any(item => item.Id == id),
+            timeout);
+        if (!listed.Any(item => item.Id == id))
+        {
+            throw new TimeoutException($"reaction '{id}' did not appear");
+        }
+    }
+
     internal static void TryDelete(string path)
     {
         try
@@ -107,12 +119,65 @@ internal static class TestEngine
     }
 }
 
+/// <summary>
+/// Starts an async enumerable so native subscription runs before the caller
+/// triggers the event it wants to observe.
+/// </summary>
+internal sealed class StartedStream<T> : IAsyncDisposable
+{
+    internal StartedStream(IAsyncEnumerable<T> stream, CancellationToken cancellationToken = default)
+    {
+        Enumerator = stream.GetAsyncEnumerator(cancellationToken);
+        Pending = Enumerator.MoveNextAsync().AsTask();
+    }
+
+    internal IAsyncEnumerator<T> Enumerator { get; }
+
+    internal Task<bool> Pending { get; private set; }
+
+    internal T Current => Enumerator.Current;
+
+    internal Task<bool> MoveNext()
+    {
+        Pending = Enumerator.MoveNextAsync().AsTask();
+        return Pending;
+    }
+
+    internal async Task<T> WaitForAsync(Func<T, bool> match, TimeSpan? timeout = null)
+    {
+        using var cts = new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(10));
+        while (await Pending.WaitAsync(cts.Token))
+        {
+            if (match(Current))
+            {
+                return Current;
+            }
+
+            _ = MoveNext();
+        }
+
+        throw new TimeoutException("stream ended before the expected item");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await Enumerator.DisposeAsync();
+        }
+        catch (Exception ex) when (
+            ex is NotSupportedException or ObjectDisposedException or OperationCanceledException)
+        {
+        }
+    }
+}
+
 /// <summary>Skipped unless <c>DRASI_SOAK_TESTS=1</c>, matching the Node analog.</summary>
 internal sealed class SoakFactAttribute : FactAttribute
 {
     public SoakFactAttribute()
     {
-        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DRASI_SOAK_TESTS")))
+        if (!string.Equals(Environment.GetEnvironmentVariable("DRASI_SOAK_TESTS"), "1", StringComparison.Ordinal))
         {
             Skip = "set DRASI_SOAK_TESTS=1 to run soak tests";
         }

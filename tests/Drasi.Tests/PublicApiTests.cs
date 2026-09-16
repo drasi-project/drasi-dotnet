@@ -36,7 +36,7 @@ public sealed class PublicApiTests
             .Where(member => member is MethodInfo method && !method.IsSpecialName)
             .Select(member => member.Name)
             .Distinct(StringComparer.Ordinal)
-            .Where(name => !blob.Contains(name, StringComparison.Ordinal))
+            .Where(name => !blob.Contains("." + name + "(", StringComparison.Ordinal))
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
         Assert.True(missing.Count == 0, "untested public Engine members: " + string.Join(", ", missing));
@@ -57,14 +57,15 @@ public sealed class PublicApiTests
     [Fact]
     public async Task TokenIdentityAndLoggerAreAccepted()
     {
+        var id = TestEngine.Id("token");
         await using var engine = await Engine.CreateAsync(
-            TestEngine.Id("token"),
+            id,
             new EngineOptions
             {
                 Logger = NullLogger.Instance,
                 Identity = new IdentityOptions { Kind = "token", Token = "t", Username = "u" },
             });
-        Assert.Equal(engine.Id, engine.Id);
+        Assert.Equal(id, engine.Id);
         Assert.False(await engine.IsRunningAsync());
     }
 
@@ -111,7 +112,7 @@ public sealed class PublicApiTests
         await using var engine = await TestEngine.StartedAsync("schema");
         await engine.AddSourceAsync("orders");
         var schema = await engine.GetSourceSchemaAsync("orders");
-        Assert.True(schema is null || schema.Nodes.Count >= 0);
+        Assert.Null(schema);
 
         var dir = Path.Combine(Path.GetTempPath(), "drasi-lock-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
@@ -217,19 +218,59 @@ public sealed class PublicApiTests
     }
 
     [Fact]
-    public async Task BuilderInstallAndPluginSourceAreInvoked()
+    public async Task BuilderInstallPluginHonoursCancellation()
     {
-        _ = nameof(DrasiBuilder.InstallPlugin);
-        var pluginServices = new ServiceCollection();
-        pluginServices.AddDrasi(TestEngine.Id("host-kind"), drasi =>
+        var services = new ServiceCollection();
+        services.AddDrasi(TestEngine.Id("host-install"), drasi => drasi.InstallPlugin("ghcr.io/x"));
+        await using var provider = services.BuildServiceProvider();
+        var hosted = Assert.Single(provider.GetServices<IHostedService>());
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => hosted.StartAsync(cts.Token));
+    }
+
+    [Fact]
+    public async Task BuilderUnknownPluginSourceIsReached()
+    {
+        var services = new ServiceCollection();
+        services.AddDrasi(TestEngine.Id("host-kind"), drasi =>
+            drasi.AddSource("mock", "orders", new JsonObject { ["intervalMs"] = 1000 }));
+        await using var provider = services.BuildServiceProvider();
+        var hosted = Assert.Single(provider.GetServices<IHostedService>());
+        var ex = await Assert.ThrowsAsync<UnknownKindException>(() => hosted.StartAsync(CancellationToken.None));
+        Assert.Equal(DrasiErrorCodes.UnknownSourceKind, ex.Code);
+    }
+
+    [Fact]
+    public async Task BuilderUnknownPluginReactionIsReached()
+    {
+        var services = new ServiceCollection();
+        services.AddDrasi(TestEngine.Id("host-rx-kind"), drasi =>
         {
-            drasi.AddSource("mock", "orders", new JsonObject { ["intervalMs"] = 1000 });
+            drasi.AddSource("orders");
+            drasi.AddQuery("q", TestEngine.OrdersQuery, ["orders"]);
             drasi.AddReaction("log", "watch", ["q"]);
+        });
+        await using var provider = services.BuildServiceProvider();
+        var hosted = Assert.Single(provider.GetServices<IHostedService>());
+        var ex = await Assert.ThrowsAsync<UnknownKindException>(() => hosted.StartAsync(CancellationToken.None));
+        Assert.Equal(DrasiErrorCodes.UnknownReactionKind, ex.Code);
+    }
+
+    [Fact]
+    public async Task BuilderDurableReactionWithoutStoreIsReached()
+    {
+        var services = new ServiceCollection();
+        services.AddDrasi(TestEngine.Id("host-durable"), drasi =>
+        {
+            drasi.AddSource("orders");
+            drasi.AddQuery("q", TestEngine.OrdersQuery, ["orders"]);
             drasi.AddDurableReaction("d", ["q"], _ => Task.CompletedTask);
         });
-        await using var pluginProvider = pluginServices.BuildServiceProvider();
-        var pluginHosted = Assert.Single(pluginProvider.GetServices<IHostedService>());
-        await Assert.ThrowsAnyAsync<DrasiException>(() => pluginHosted.StartAsync(CancellationToken.None));
+        await using var provider = services.BuildServiceProvider();
+        var hosted = Assert.Single(provider.GetServices<IHostedService>());
+        var ex = await Assert.ThrowsAsync<ConfigException>(() => hosted.StartAsync(CancellationToken.None));
+        Assert.Equal(DrasiErrorCodes.DurableRequiresStateStore, ex.Code);
     }
 
     [Fact]

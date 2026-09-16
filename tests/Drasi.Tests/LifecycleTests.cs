@@ -58,6 +58,9 @@ public sealed class LifecycleTests
         await engine.WaitForQueryAsync("q");
         await engine.StopAsync();
         Assert.False(await engine.IsRunningAsync());
+        Assert.True(IsStopped(await TestEngine.WaitUntilAsync(
+            () => engine.GetSourceStatusAsync("orders"),
+            IsStopped)));
 
         await engine.StartAsync();
         await engine.WaitForQueryAsync("q");

@@ -70,31 +70,25 @@ public sealed class LeakSoakTests
         await engine.WaitForQueryAsync("q");
 
         var seen = 0;
-        var consume = Task.Run(async () =>
-        {
-            try
-            {
-                await foreach (var evt in engine.QueryResultsAsync("q"))
-                {
-                    if (evt.Results.Count > 0)
-                    {
-                        Interlocked.Increment(ref seen);
-                    }
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-        });
-
+        await using var stream = new StartedStream<QueryResultEvent>(engine.QueryResultsAsync("q", "stream-long"));
+        await TestEngine.WaitForReactionAsync(engine, "stream-long");
         for (var i = 0; i < 5; i++)
         {
             await engine.PushChangeAsync("orders", TestEngine.Order($"o{i}"));
-            await Task.Delay(50);
+        }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (seen < 1 && await stream.Pending.WaitAsync(cts.Token))
+        {
+            if (stream.Current.Results.Count > 0)
+            {
+                seen++;
+            }
+
+            _ = stream.MoveNext();
         }
 
         await engine.DisposeAsync();
-        await consume.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.True(seen >= 1);
     }
 
