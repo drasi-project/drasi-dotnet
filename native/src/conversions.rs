@@ -135,6 +135,16 @@ pub fn json_to_source_change(source_id: &str, input: &Value) -> FfiResult<Source
     }
 }
 
+/// `bootstrap.kind` is required whenever a bootstrap block is present.
+pub fn bootstrap_kind_from(value: &Value) -> FfiResult<&str> {
+    value.get("kind").and_then(Value::as_str).ok_or_else(|| {
+        FfiError::new(
+            ErrorCode::BootstrapKindRequired,
+            "bootstrap requires a 'kind'",
+        )
+    })
+}
+
 pub fn parse_string_list(json: &str, name: &str) -> FfiResult<Vec<String>> {
     let value: Value = serde_json::from_str(json)
         .map_err(|err| FfiError::config(format!("{name} is not valid JSON: {err}")))?;
@@ -403,5 +413,175 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err.code, ErrorCode::RelationRequiresBothEnds);
+    }
+
+    #[test]
+    fn change_must_be_an_object() {
+        let err = json_to_source_change("orders", &json!(["insert"])).unwrap_err();
+        assert_eq!(err.code, ErrorCode::ChangeNotObject);
+    }
+
+    #[test]
+    fn change_op_and_id_are_required() {
+        assert_eq!(
+            json_to_source_change("orders", &json!({"id": "o1"}))
+                .unwrap_err()
+                .code,
+            ErrorCode::ChangeOpRequired
+        );
+        assert_eq!(
+            json_to_source_change("orders", &json!({"op": "insert"}))
+                .unwrap_err()
+                .code,
+            ErrorCode::ChangeIdRequired
+        );
+    }
+
+    #[test]
+    fn delete_update_and_relation_round_trip() {
+        assert!(matches!(
+            json_to_source_change("orders", &json!({"op": "delete", "id": "o1"})).unwrap(),
+            SourceChange::Delete { .. }
+        ));
+        assert!(matches!(
+            json_to_source_change(
+                "orders",
+                &json!({"op": "update", "id": "o1", "labels": "Order"})
+            )
+            .unwrap(),
+            SourceChange::Update { .. }
+        ));
+        assert!(matches!(
+            json_to_source_change(
+                "graph",
+                &json!({"op": "add", "id": "r1", "startId": "a", "endId": "b"})
+            )
+            .unwrap(),
+            SourceChange::Insert { .. }
+        ));
+    }
+
+    #[test]
+    fn properties_must_be_an_object() {
+        let err = json_to_source_change(
+            "orders",
+            &json!({"op": "insert", "id": "o1", "properties": ["nope"]}),
+        )
+        .unwrap_err();
+        assert_eq!(err.code, ErrorCode::ConfigInvalid);
+    }
+
+    #[test]
+    fn bootstrap_kind_is_required() {
+        let err = bootstrap_kind_from(&json!({})).unwrap_err();
+        assert_eq!(err.code, ErrorCode::BootstrapKindRequired);
+        assert_eq!(bootstrap_kind_from(&json!({"kind": "sql"})).unwrap(), "sql");
+    }
+
+    #[test]
+    fn parse_string_list_accepts_array_or_string() {
+        assert_eq!(
+            parse_string_list(r#"["a","b"]"#, "ids").unwrap(),
+            ["a", "b"]
+        );
+        assert_eq!(parse_string_list(r#""solo""#, "ids").unwrap(), ["solo"]);
+        assert!(parse_string_list("not-json", "ids").is_err());
+        assert!(parse_string_list("[1]", "ids").is_err());
+        assert!(parse_string_list("{}", "ids").is_err());
+    }
+
+    #[test]
+    fn parse_source_subscriptions_accepts_ids_and_pipelines() {
+        let parsed =
+            parse_source_subscriptions(r#"["orders", {"id":"payments","pipeline":["unpack"]}]"#)
+                .unwrap();
+        assert_eq!(parsed[0], ("orders".into(), Vec::new()));
+        assert_eq!(parsed[1], ("payments".into(), vec!["unpack".into()]));
+        assert_eq!(
+            parse_source_subscriptions(r#""solo""#).unwrap(),
+            vec![("solo".into(), Vec::new())]
+        );
+        assert!(parse_source_subscriptions("{}").is_err());
+        assert!(parse_source_subscriptions("not-json").is_err());
+        assert!(parse_source_subscriptions("[1]").is_err());
+    }
+
+    #[test]
+    fn build_query_rejects_unknown_language_and_empty_joins() {
+        let err = build_query(
+            "q",
+            "MATCH (n) RETURN n",
+            &[("s".into(), Vec::new())],
+            QueryOptionsJson {
+                language: Some("sql".into()),
+                ..QueryOptionsJson::default()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err.code, ErrorCode::UnknownQueryLanguage);
+
+        let err = build_query(
+            "q",
+            "MATCH (n) RETURN n",
+            &[("s".into(), vec!["unpack".into()])],
+            QueryOptionsJson {
+                joins: Some(vec![JoinJson {
+                    id: "R".into(),
+                    keys: vec![],
+                }]),
+                ..QueryOptionsJson::default()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err.code, ErrorCode::ConfigInvalid);
+    }
+
+    #[test]
+    fn build_query_accepts_options_and_gql() {
+        let options = QueryOptionsJson {
+            language: Some("gql".into()),
+            auto_start: Some(false),
+            enable_bootstrap: Some(true),
+            bootstrap_timeout_seconds: Some(5),
+            priority_queue_capacity: Some(8),
+            dispatch_buffer_capacity: Some(8),
+            outbox_capacity: Some(8),
+            dispatch_mode: Some("broadcast".into()),
+            joins: Some(vec![JoinJson {
+                id: "R".into(),
+                keys: vec![JoinKeyJson {
+                    label: "Order".into(),
+                    property: "id".into(),
+                }],
+            }]),
+            middleware: Some(vec![MiddlewareJson {
+                name: "flatten".into(),
+                kind: "promote".into(),
+                config: None,
+            }]),
+        };
+        assert!(build_query(
+            "q",
+            "MATCH (n) RETURN n",
+            &[("s".into(), Vec::new())],
+            options
+        )
+        .is_ok());
+        assert!(parse_query_options(None).is_ok());
+        assert!(parse_query_options(Some("{}")).is_ok());
+        assert!(parse_query_options(Some("not-json")).is_err());
+
+        let err = build_query(
+            "q",
+            "MATCH (n) RETURN n",
+            &[("s".into(), Vec::new())],
+            QueryOptionsJson {
+                dispatch_mode: Some("nope".into()),
+                ..QueryOptionsJson::default()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err.code, ErrorCode::ConfigInvalid);
+        assert!(status_json(vec![("q".into(), ComponentStatus::Running)]).is_ok());
     }
 }

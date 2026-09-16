@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Production-bar test suite: lifecycle, error-path, streaming, cancellation,
+  concurrency, leak/soak, and public-API coverage, plus CI coverage gates
+  (`cargo llvm-cov` on native marshalling, coverlet on the C# façade).
+
 ## [0.1.0] - 2026-09-04
 
 Initial public API for embedding Drasi in .NET, at in-process parity with

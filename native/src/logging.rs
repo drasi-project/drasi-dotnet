@@ -29,8 +29,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 
-pub type LogCallback =
-    unsafe extern "C" fn(i32, *const c_char, *const c_char, *mut c_void);
+pub type LogCallback = unsafe extern "C" fn(i32, *const c_char, *const c_char, *mut c_void);
 
 struct Sink {
     callback: LogCallback,
@@ -54,7 +53,9 @@ impl tracing::field::Visit for MessageVisitor {
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
         if field.name() == "message" && self.message.is_empty() {
             self.message = format!("{value:?}");
-            if self.message.starts_with('"') && self.message.ends_with('"') && self.message.len() >= 2
+            if self.message.starts_with('"')
+                && self.message.ends_with('"')
+                && self.message.len() >= 2
             {
                 self.message = self.message[1..self.message.len() - 1].to_string();
             }
@@ -129,7 +130,11 @@ impl<'a> fmt::MakeWriter<'a> for QuietIfSink {
 
     fn make_writer(&'a self) -> DualWriter {
         DualWriter {
-            discard: SINK.lock().ok().and_then(|g| g.as_ref().map(|_| ())).is_some(),
+            discard: SINK
+                .lock()
+                .ok()
+                .and_then(|g| g.as_ref().map(|_| ()))
+                .is_some(),
         }
     }
 }
@@ -137,8 +142,7 @@ impl<'a> fmt::MakeWriter<'a> for QuietIfSink {
 pub fn init() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        let env = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new("warn"));
+        let env = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("warn"));
         let (filter, handle) = reload::Layer::new(env);
         let _ = FILTER.set(handle);
         let _ = tracing_log::LogTracer::init();

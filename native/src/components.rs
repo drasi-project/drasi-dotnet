@@ -26,7 +26,9 @@ use drasi_core::models::{Element, SourceChange};
 use drasi_lib::bootstrap::{
     BootstrapContext, BootstrapProvider, BootstrapRequest, BootstrapResult,
 };
-use drasi_lib::channels::{BootstrapEvent, BootstrapEventSender, QueryResult, SubscriptionResponse};
+use drasi_lib::channels::{
+    BootstrapEvent, BootstrapEventSender, QueryResult, SubscriptionResponse,
+};
 use drasi_lib::config::SourceSubscriptionSettings;
 use drasi_lib::context::{ReactionRuntimeContext, SourceRuntimeContext};
 use drasi_lib::{
@@ -207,10 +209,7 @@ impl Source for CsharpSource {
             .await;
     }
 
-    async fn set_bootstrap_provider(
-        &self,
-        provider: Box<dyn BootstrapProvider + 'static>,
-    ) {
+    async fn set_bootstrap_provider(&self, provider: Box<dyn BootstrapProvider + 'static>) {
         self.base.set_bootstrap_provider(provider).await;
     }
 }
@@ -267,10 +266,7 @@ impl Source for SharedSource {
         self.0.initialize(context).await;
     }
 
-    async fn set_bootstrap_provider(
-        &self,
-        provider: Box<dyn BootstrapProvider + 'static>,
-    ) {
+    async fn set_bootstrap_provider(&self, provider: Box<dyn BootstrapProvider + 'static>) {
         self.0.set_bootstrap_provider(provider).await;
     }
 }
