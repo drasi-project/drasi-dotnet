@@ -77,7 +77,7 @@ public sealed class PostgresPluginTests
             }
 
             await using var reloaded = await Engine.CreateAsync(TestEngine.Id("postgres-lockfile"));
-            var installed = await reloaded.InstallFromLockfileAsync(pluginsDir);
+            var installed = await reloaded.InstallFromLockfileAsync(pluginsDir, load: false);
             Assert.Contains(installed, reference => reference.Contains("source/postgres", StringComparison.Ordinal));
             Assert.Contains(installed, reference => reference.Contains("bootstrap/postgres", StringComparison.Ordinal));
         }
