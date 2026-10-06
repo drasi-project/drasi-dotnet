@@ -50,6 +50,35 @@ jobs:
       - name: .NET tests
         run: dotnet test tests/Drasi.Tests/Drasi.Tests.csproj -c Release --nologo
 
+  postgres-plugin-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install libclang for rocksdb bindgen
+        run: sudo apt-get update && sudo apt-get install -y clang libclang-dev
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Start PostgreSQL
+        run: docker compose -f tutorials/getting-started/database/docker-compose.yml up -d --wait
+
+      - name: Verify PostgreSQL source and bootstrap plugins
+        env:
+          DRASI_POSTGRES_PLUGIN_TESTS: "1"
+        run: |
+          cargo build --release --manifest-path native/Cargo.toml
+          dotnet test tests/Drasi.Tests/Drasi.Tests.csproj -c Release --nologo \
+            --filter FullyQualifiedName~PostgresPluginTests
+
+      - name: Stop PostgreSQL
+        if: always()
+        run: docker compose -f tutorials/getting-started/database/docker-compose.yml down --volumes
+
   # Meaningful coverage for a native host lives in Rust marshalling/validation
   # (conversions.rs + error.rs), matching Node/Python. The C# façade is gated
   # with coverlet. Both are platform-independent, so a single-OS job is enough;

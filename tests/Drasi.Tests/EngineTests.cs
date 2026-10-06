@@ -46,6 +46,16 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void HostInfoReportsSentinelPostgresPluginAbi()
+    {
+        var info = Engine.GetHostInfo();
+        Assert.Equal("0.5.10", info.CoreVersion);
+        Assert.Equal("0.9.3", info.LibVersion);
+        Assert.Equal("0.11.3", info.SdkVersion);
+        Assert.Equal("0.14.0", info.FfiSdkVersion);
+    }
+
+    [Fact]
     public async Task DurableReactionRequiresStateStore()
     {
         await using var engine = await Engine.CreateAsync($"test-{Guid.NewGuid():N}");
@@ -194,23 +204,17 @@ public sealed class EngineTests
         await engine.AddQueryAsync("open", OpenOrders, ["orders"]);
         await engine.WaitForQueryAsync("open");
 
-        var seen = new TaskCompletionSource<QueryResultEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var consume = Task.Run(async () =>
-        {
-            await foreach (var evt in engine.QueryResultsAsync("open"))
-            {
-                if (evt.Results.Any(diff => diff.Type == DiffType.Add))
-                {
-                    seen.TrySetResult(evt);
-                    break;
-                }
-            }
-        });
-
+        await using var stream = new StartedStream<QueryResultEvent>(
+            engine.QueryResultsAsync("open", "stream-open"));
+        await TestEngine.WaitUntilAsync<IReadOnlyList<ComponentInfo>>(
+            () => engine.ListReactionsAsync(),
+            reactions => reactions.Any(reaction => reaction.Id == "stream-open"),
+            TimeSpan.FromSeconds(5));
         await engine.PushChangeAsync("orders", Order("o2", "open", 7));
-        var evt = await seen.Task.WaitAsync(TimeSpan.FromSeconds(15));
+        var evt = await stream.WaitForAsync(
+            result => result.Results.Any(diff => diff.Type == DiffType.Add),
+            TimeSpan.FromSeconds(15));
         Assert.Equal("open", evt.QueryId);
-        await consume.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [Fact]

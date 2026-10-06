@@ -183,3 +183,15 @@ internal sealed class SoakFactAttribute : FactAttribute
         }
     }
 }
+
+/// <summary>Runs only when PostgreSQL CDC and registry access are explicitly enabled.</summary>
+internal sealed class PostgresPluginFactAttribute : FactAttribute
+{
+    public PostgresPluginFactAttribute()
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("DRASI_POSTGRES_PLUGIN_TESTS"), "1", StringComparison.Ordinal))
+        {
+            Skip = "set DRASI_POSTGRES_PLUGIN_TESTS=1 to run PostgreSQL plugin integration tests";
+        }
+    }
+}

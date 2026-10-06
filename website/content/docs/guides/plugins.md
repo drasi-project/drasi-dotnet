@@ -17,12 +17,18 @@ This guide needs network access to `ghcr.io`.
 
 ```csharp
 var info = Engine.GetHostInfo();
-Console.WriteLine($"{info.TargetTriple}  core {info.CoreVersion}  lib {info.LibVersion}");
+Console.WriteLine(
+    $"{info.TargetTriple} core {info.CoreVersion} lib {info.LibVersion} "
+    + $"plugin {info.SdkVersion} ffi {info.FfiSdkVersion}");
 ```
 
 `GetHostInfo` reports the platform triple and the `drasi-core`, `drasi-lib`,
-and plugin SDK versions this binary was built against. Plugins must match
-those versions.
+and plugin package SDK versions this binary was built against. It also reports
+the cdylib FFI ABI that the loader validates against plugin metadata. Plugins
+must match all of those values. Current packages support the PostgreSQL plugin
+set used by Sentinel: `drasi-core` 0.5.10, `drasi-lib` 0.9.3, the host/plugin
+SDK 0.11.3, and FFI ABI 0.14.0. Use PostgreSQL source and bootstrap artifacts
+built for this exact set.
 
 ## Search the registry
 

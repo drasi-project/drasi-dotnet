@@ -14,9 +14,9 @@
 
 //! Host version introspection used to match plugins.
 
-pub const DRASI_CORE_VERSION: &str = "0.5.7";
-pub const DRASI_LIB_VERSION: &str = "0.8.9";
-pub const DRASI_SDK_VERSION: &str = "0.10.0";
+pub const DRASI_CORE_VERSION: &str = "0.5.10";
+pub const DRASI_LIB_VERSION: &str = "0.9.3";
+pub const DRASI_SDK_VERSION: &str = "0.11.3";
 
 pub fn ffi_sdk_version() -> &'static str {
     drasi_plugin_sdk::ffi::metadata::FFI_SDK_VERSION
