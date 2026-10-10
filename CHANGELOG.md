@@ -7,11 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-10
+
 ### Added
 
+- Configurable redb write-ahead log provider for durability-enabled transient
+  sources, including cross-process recovery and WAL lock release on shutdown.
+- A public documentation site with installation, concepts, guides, examples,
+  and an API reference.
+- .NET versions of the Getting Started, Building Comfort, and Curbside Pickup
+  tutorials.
 - Production-bar test suite: lifecycle, error-path, streaming, cancellation,
   concurrency, leak/soak, and public-API coverage, plus CI coverage gates
   (`cargo llvm-cov` on native marshalling, coverlet on the C# façade).
+
+### Fixed
+
+- RID-specific native assets now use the standard NuGet runtime paths.
+- PostgreSQL source and bootstrap plugin compatibility by aligning the native
+  host and storage backends with the approved Drasi ABI versions.
 
 ## [0.1.0] - 2026-09-04
 
@@ -27,5 +41,6 @@ Python and Node.
 - RID-specific native binaries in the nupkg (`win-x64`, `linux-x64`,
   `linux-arm64`, `osx-x64`, `osx-arm64`).
 
-[Unreleased]: https://github.com/drasi-project/drasi-dotnet/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/drasi-project/drasi-dotnet/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/drasi-project/drasi-dotnet/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/drasi-project/drasi-dotnet/releases/tag/v0.1.0

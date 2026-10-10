@@ -13,7 +13,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>Drasi</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>The Drasi Authors</Authors>
     <Copyright>Copyright 2026 The Drasi Authors</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -46,7 +46,7 @@
   <ItemGroup Condition="'$(NativeAssetsDir)' != ''">
     <Content Include="$(NativeAssetsDir)\**\*">
       <Pack>true</Pack>
-      <PackagePath>runtimes\%(RecursiveDir)</PackagePath>
+      <PackagePath>runtimes</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
