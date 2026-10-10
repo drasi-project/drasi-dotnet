@@ -36,12 +36,14 @@ use crate::error::{ErrorCode, FfiError, FfiResult};
 use crate::plugins::PluginHost;
 use crate::stores::CreateOptions;
 use crate::streams::{pump_broadcast, pump_stream, StreamHandle};
+use crate::wal::ReleasableWalProvider;
 
 pub struct EngineInner {
     pub id: String,
     pub core: DrasiLib,
     pub sources: Mutex<HashMap<String, Arc<CsharpSource>>>,
     pub plugins: Arc<PluginHost>,
+    wal_provider: Option<Arc<ReleasableWalProvider>>,
     default_plugin_dir: Mutex<Option<PathBuf>>,
     durable_capable: bool,
     /// Kept alive so identity-plugin function pointers stay valid.
@@ -232,7 +234,7 @@ pub async fn create(id: String, options_json: Option<&str>) -> FfiResult<EngineH
         }
         None => (None, None),
     };
-    let (builder, secrets) = options
+    let (builder, secrets, wal_provider) = options
         .apply(DrasiLib::builder().with_id(id.clone()), identity_provider)
         .await?;
     let core = builder.build().await.map_err(FfiError::engine)?;
@@ -243,6 +245,7 @@ pub async fn create(id: String, options_json: Option<&str>) -> FfiResult<EngineH
             core,
             sources: Mutex::new(HashMap::new()),
             plugins: Arc::new(PluginHost::new(secrets)),
+            wal_provider,
             default_plugin_dir: Mutex::new(None),
             durable_capable,
             identity_host,
@@ -433,7 +436,11 @@ pub async fn shutdown(handle: &EngineHandle) -> FfiResult<()> {
     if handle.inner.closed.swap(true, Ordering::Relaxed) {
         return Ok(());
     }
-    handle.inner.core.shutdown().await.map_err(FfiError::engine)
+    let result = handle.inner.core.shutdown().await.map_err(FfiError::engine);
+    if let Some(provider) = &handle.inner.wal_provider {
+        provider.release().await;
+    }
+    result
 }
 
 pub async fn is_running(handle: &EngineHandle) -> bool {

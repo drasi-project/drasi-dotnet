@@ -68,7 +68,7 @@ See [Load a topology from configuration](../guides/configuration/).
 | --- | --- |
 | `StartAsync()` | Start the engine and every component configured to auto-start |
 | `StopAsync()` | Stop the engine. Components stay registered |
-| `ShutdownAsync()` | Permanently shut down and release native stores (including the RocksDB lock) |
+| `ShutdownAsync()` | Permanently shut down and release native stores, including RocksDB and WAL file locks |
 | `IsRunningAsync()` | Whether the engine is running |
 | `Dispose` / `DisposeAsync` | Destroy the native handle. Further calls throw `ObjectDisposedException` |
 

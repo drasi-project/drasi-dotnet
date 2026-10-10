@@ -205,6 +205,9 @@ public sealed class ErrorPathTests
             DrasiException.FromCode(DrasiErrorCodes.UnknownIndexStoreKind, "m").GetType());
         Assert.Equal(
             typeof(UnknownKindException),
+            DrasiException.FromCode(DrasiErrorCodes.UnknownWalProviderKind, "m").GetType());
+        Assert.Equal(
+            typeof(UnknownKindException),
             DrasiException.FromCode(DrasiErrorCodes.UnknownIdentityKind, "m").GetType());
         Assert.Equal(
             typeof(UnknownKindException),
@@ -221,6 +224,9 @@ public sealed class ErrorPathTests
         Assert.Equal(
             typeof(ConfigException),
             DrasiException.FromCode(DrasiErrorCodes.IndexStorePathRequired, "m").GetType());
+        Assert.Equal(
+            typeof(ConfigException),
+            DrasiException.FromCode(DrasiErrorCodes.WalProviderPathRequired, "m").GetType());
         Assert.Equal(
             typeof(ConfigException),
             DrasiException.FromCode(DrasiErrorCodes.IdentityKindRequired, "m").GetType());

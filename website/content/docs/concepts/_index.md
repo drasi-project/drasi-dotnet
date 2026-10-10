@@ -96,7 +96,8 @@ For callbacks that must not lose work across restarts, use
 
 `Engine` is the main type. Create it with `Engine.CreateAsync`, start it with
 `StartAsync`, and dispose it with `await using`. Call `ShutdownAsync` when you
-need to release native stores, including the RocksDB lock, before dispose.
+need to release native stores, including RocksDB and WAL file locks, before
+dispose.
 
 Hosted applications can skip the manual lifecycle. Call `AddDrasi` and the
 generic host starts the engine, applies the topology, and shuts it down. See

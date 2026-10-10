@@ -46,6 +46,52 @@ public sealed class RecoveryTests
     }
 
     [Fact]
+    public async Task WalProviderRequiresPath()
+    {
+        var config = JsonNode.Parse("""
+            { "id": "t", "walProvider": { "kind": "redb" } }
+            """)!;
+        var ex = await Assert.ThrowsAsync<ConfigException>(() => Engine.FromConfigAsync(config));
+        Assert.Equal(DrasiErrorCodes.WalProviderPathRequired, ex.Code);
+    }
+
+    [Fact]
+    public async Task UnknownWalProviderKindIsRejected()
+    {
+        var ex = await Assert.ThrowsAsync<UnknownKindException>(() =>
+            Engine.CreateAsync(
+                TestEngine.Id("wal-kind"),
+                new EngineOptions
+                {
+                    WalProvider = new WalProviderOptions { Kind = "sqlite", Path = "/tmp/x" },
+                }));
+        Assert.Equal(DrasiErrorCodes.UnknownWalProviderKind, ex.Code);
+    }
+
+    [Fact]
+    public async Task ConfigWalProviderWinsOverEngineOptions()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "drasi-wal-" + Guid.NewGuid().ToString("N"));
+        var config = new JsonObject
+        {
+            ["id"] = TestEngine.Id("wal-config"),
+            ["walProvider"] = new JsonObject
+            {
+                ["kind"] = "redb",
+                ["path"] = path,
+            },
+        };
+        await using var engine = await Engine.FromConfigAsync(
+            config,
+            new EngineOptions
+            {
+                WalProvider = new WalProviderOptions { Kind = "sqlite", Path = "/tmp/ignored" },
+            });
+        Assert.True(await engine.IsRunningAsync());
+        Assert.Equal(path, config["walProvider"]?["path"]?.GetValue<string>());
+    }
+
+    [Fact]
     public async Task RocksDbIndexWritesFiles()
     {
         var path = NewIndexPath();

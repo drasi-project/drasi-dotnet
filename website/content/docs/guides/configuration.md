@@ -36,7 +36,7 @@ Document keys:
 | Key | Meaning |
 | --- | --- |
 | `id` | Engine id (default `drasi`) |
-| `secrets`, `stateStore`, `indexStore`, `identity` | Same as `EngineOptions`. Merged from the `options` argument when the document omits them. |
+| `secrets`, `stateStore`, `indexStore`, `walProvider`, `identity` | Same as `EngineOptions`. Merged from the `options` argument when the document omits them. |
 | `pluginsDir` | Directory passed to `LoadPluginsAsync` before start |
 | `sources` | In-process (`id` only) or plugin (`kind`, `id`, `config`, `autoStart`, `bootstrap`) |
 | `queries` | `id`, `query`, `sources`, optional `language`, `joins` |
@@ -96,9 +96,31 @@ await Engine.CreateAsync("orders-app", new EngineOptions
     Secrets = new Dictionary<string, string> { ["db"] = password },
     StateStore = new StateStoreOptions { Path = "./state.redb" },
     IndexStore = new IndexStoreOptions { Path = "./index" },
+    WalProvider = new WalProviderOptions { Path = "./wal" },
     Identity = new IdentityOptions { Kind = "token", Token = token },
 });
 ```
 
+The equivalent configuration object is:
+
+```json
+{
+  "walProvider": {
+    "kind": "redb",
+    "path": "./wal"
+  }
+}
+```
+
 RocksDB holds a process-exclusive lock on `IndexStore.Path`. Only one engine
 may use a given path at a time. `ShutdownAsync` releases that lock.
+
+`WalProvider.Path` is a directory. The default `redb` provider creates one WAL
+file per transient source that explicitly enables durability. Configuring the
+provider does not enable durability for every source. `ShutdownAsync` releases
+the WAL file handles so another engine can reopen the same directory without
+disposing the first `Engine` object.
+
+The WAL provider records transient-source events for replay. It is not a
+PostgreSQL replication slot and does not resume a PostgreSQL CDC source's
+logical replication slot.

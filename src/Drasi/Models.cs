@@ -103,6 +103,12 @@ public sealed class EngineOptions
     /// <summary>Persistent query-index backend. Kind <c>rocksdb</c> with a <c>Path</c>.</summary>
     public IndexStoreOptions? IndexStore { get; set; }
 
+    /// <summary>
+    /// Write-ahead log for transient sources that enable durability.
+    /// Kind <c>redb</c> with a directory <c>Path</c>.
+    /// </summary>
+    public WalProviderOptions? WalProvider { get; set; }
+
     /// <summary>Built-in <c>password</c>/<c>token</c> identity, or a plugin kind.</summary>
     public IdentityOptions? Identity { get; set; }
 
@@ -122,6 +128,12 @@ public sealed class IndexStoreOptions
     public required string Path { get; init; }
     public bool? EnableArchive { get; init; }
     public bool? DirectIo { get; init; }
+}
+
+public sealed class WalProviderOptions
+{
+    public string Kind { get; init; } = "redb";
+    public required string Path { get; init; }
 }
 
 public sealed class IdentityOptions
