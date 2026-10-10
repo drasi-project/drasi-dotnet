@@ -109,7 +109,8 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=0.1.0" >> "$GITHUB_OUTPUT"
+            version=$(dotnet msbuild src/Drasi/Drasi.csproj -getProperty:Version -nologo)
+            echo "version=$version" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Pack
@@ -118,7 +119,18 @@ jobs:
           dotnet pack src/Drasi/Drasi.csproj -c Release -o nupkgs \
             -p:NativeAssetsDir=$(pwd)/artifacts/runtimes \
             -p:Version=${{ steps.version.outputs.version }}
-          unzip -l nupkgs/*.nupkg | grep -E 'runtimes/|drasi_ffi' || true
+          package=$(find nupkgs -maxdepth 1 -type f -name '*.nupkg' -print -quit)
+          test -n "$package"
+          assets=(
+            win-x64/native/drasi_ffi.dll
+            linux-x64/native/libdrasi_ffi.so
+            linux-arm64/native/libdrasi_ffi.so
+            osx-x64/native/libdrasi_ffi.dylib
+            osx-arm64/native/libdrasi_ffi.dylib
+          )
+          for asset in "${assets[@]}"; do
+            unzip -Z1 "$package" | grep -Fx "runtimes/$asset"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
