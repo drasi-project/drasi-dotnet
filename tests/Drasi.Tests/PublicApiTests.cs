@@ -81,6 +81,7 @@ public sealed class PublicApiTests
                 new EngineOptions
                 {
                     StateStore = new StateStoreOptions { Path = Path.Combine(path, "state.redb") },
+                    IndexStore = new IndexStoreOptions { Path = Path.Combine(path, "index") },
                 });
             await engine.StartAsync();
             await engine.AddSourceAsync("orders");

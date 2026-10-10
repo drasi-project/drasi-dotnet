@@ -366,6 +366,11 @@ impl Reaction for CsharpReaction {
         self.durable
     }
 
+    fn default_recovery_policy(&self) -> ReactionRecoveryPolicy {
+        self.base
+            .resolved_recovery_policy(ReactionRecoveryPolicy::Strict)
+    }
+
     async fn initialize(&self, context: ReactionRuntimeContext) {
         self.base.initialize(context).await;
     }
@@ -376,12 +381,16 @@ impl Reaction for CsharpReaction {
         let base = self.base.clone_shared();
         let callback = self.callback;
         let user_data = self.user_data;
+        let recovery_policy = self.default_recovery_policy();
 
         let task = tokio::spawn(async move {
             let result = base
-                .run_standard_loop(shutdown_rx, checkpoints, move |event| async move {
-                    dispatch(callback, user_data, &event)
-                })
+                .run_standard_loop(
+                    shutdown_rx,
+                    checkpoints,
+                    recovery_policy,
+                    move |event| async move { dispatch(callback, user_data, &event) },
+                )
                 .await;
             if let Err(err) = result {
                 log::error!("csharp reaction loop stopped: {err:#}");
