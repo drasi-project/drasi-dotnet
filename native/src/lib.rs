@@ -33,6 +33,10 @@ mod plugins;
 mod secrets;
 mod stores;
 mod streams;
+mod wal;
+
+#[cfg(test)]
+mod wal_process_tests;
 
 use std::os::raw::{c_char, c_void};
 use std::panic::{catch_unwind, AssertUnwindSafe};

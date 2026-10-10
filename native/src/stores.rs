@@ -24,6 +24,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use crate::error::{ErrorCode, FfiError, FfiResult};
+use crate::wal::ReleasableWalProvider;
 
 #[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,6 +35,8 @@ pub struct CreateOptions {
     pub state_store: Option<StateStoreJson>,
     #[serde(alias = "index_store")]
     pub index_store: Option<Value>,
+    #[serde(alias = "wal_provider")]
+    pub wal_provider: Option<WalProviderJson>,
     pub identity: Option<Value>,
     #[serde(alias = "plugins_dir")]
     pub plugins_dir: Option<String>,
@@ -41,6 +44,12 @@ pub struct CreateOptions {
 
 #[derive(Deserialize)]
 pub struct StateStoreJson {
+    pub kind: String,
+    pub path: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct WalProviderJson {
     pub kind: String,
     pub path: Option<String>,
 }
@@ -115,8 +124,13 @@ impl CreateOptions {
         mut self,
         mut builder: DrasiLibBuilder,
         plugin_identity: Option<Arc<dyn drasi_lib::identity::IdentityProvider>>,
-    ) -> FfiResult<(DrasiLibBuilder, HashMap<String, String>)> {
+    ) -> FfiResult<(
+        DrasiLibBuilder,
+        HashMap<String, String>,
+        Option<Arc<ReleasableWalProvider>>,
+    )> {
         let secrets = std::mem::take(&mut self.secrets);
+        let mut wal_provider_handle = None;
         let mut store = MemorySecretStoreProvider::new();
         for (name, value) in &secrets {
             store = store.with_secret(name.clone(), value.clone());
@@ -147,6 +161,29 @@ impl CreateOptions {
                     )
                 })?;
             builder = builder.with_state_store_provider(Arc::new(provider));
+        }
+
+        if let Some(ref wal_provider) = self.wal_provider {
+            if wal_provider.kind != "redb" {
+                return Err(FfiError::new(
+                    ErrorCode::UnknownWalProviderKind,
+                    format!(
+                        "unknown WAL provider kind '{}', expected 'redb'",
+                        wal_provider.kind
+                    ),
+                ));
+            }
+            let path = wal_provider.path.clone().ok_or_else(|| {
+                FfiError::new(
+                    ErrorCode::WalProviderPathRequired,
+                    "a redb WAL provider requires a 'path'",
+                )
+            })?;
+            let provider = Arc::new(ReleasableWalProvider::new(Arc::new(
+                drasi_wal_redb::RedbWalProvider::new(&path),
+            )));
+            builder = builder.with_wal_provider(provider.clone());
+            wal_provider_handle = Some(provider);
         }
 
         let identity = self.parse_identity()?;
@@ -180,7 +217,7 @@ impl CreateOptions {
             builder = builder.with_identity_provider(provider);
         }
 
-        Ok((builder, secrets))
+        Ok((builder, secrets, wal_provider_handle))
     }
 }
 

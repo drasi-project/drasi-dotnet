@@ -32,7 +32,7 @@ rationale.
 | Metrics / schema | `GetQueryMetricsAsync`, `GetReactionMetricsAsync`, `GetLifecycleMetricsAsync`, `GetSourceSchemaAsync`, `GetGraphSchemaAsync` |
 | Streaming | `QueryResultsAsync`, `QueryEventsAsync`, `SourceEventsAsync`, `ReactionEventsAsync`, `AllEventsAsync`, `QueryLogsAsync`, `SourceLogsAsync`, `ReactionLogsAsync` |
 | Plugins | `LoadPluginsAsync`, `WatchPluginsAsync`, `PluginKindsAsync`, `GetHostInfo`, `SearchPluginsAsync`, `ListPluginTagsAsync`, `ResolvePluginAsync`, `InstallPluginAsync`, `PullPluginAsync`, `WriteLockfileAsync`, `ReadLockfile`, `InstallFromLockfileAsync`, `UpdateSourceAsync`, `UpdateReactionAsync`, `UseSecretStoreAsync`, config schemas |
-| Construction options | `secrets`, `stateStore` (redb), `indexStore` (rocksdb), `identity`, `pluginsDir` |
+| Construction options | `secrets`, `stateStore` (redb), `indexStore` (rocksdb), `walProvider` (redb directory), `identity`, `pluginsDir` |
 
 ¹ **static factory**. `AddSourceAsync` / `AddReactionAsync` are overloaded: in-process push/callback vs plugin `kind`.
 

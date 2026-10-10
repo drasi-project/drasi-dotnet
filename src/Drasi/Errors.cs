@@ -35,6 +35,8 @@ public static class DrasiErrorCodes
     public const string UnknownStateStoreKind = "UNKNOWN_STATE_STORE_KIND";
     public const string IndexStorePathRequired = "INDEX_STORE_PATH_REQUIRED";
     public const string UnknownIndexStoreKind = "UNKNOWN_INDEX_STORE_KIND";
+    public const string WalProviderPathRequired = "WAL_PROVIDER_PATH_REQUIRED";
+    public const string UnknownWalProviderKind = "UNKNOWN_WAL_PROVIDER_KIND";
     public const string IdentityKindRequired = "IDENTITY_KIND_REQUIRED";
     public const string UnknownIdentityKind = "UNKNOWN_IDENTITY_KIND";
     public const string IdentityConfigInvalid = "IDENTITY_CONFIG_INVALID";
@@ -66,6 +68,8 @@ public static class DrasiErrorCodes
         UnknownStateStoreKind,
         IndexStorePathRequired,
         UnknownIndexStoreKind,
+        WalProviderPathRequired,
+        UnknownWalProviderKind,
         IdentityKindRequired,
         UnknownIdentityKind,
         IdentityConfigInvalid,
@@ -100,6 +104,7 @@ public class DrasiException : Exception
             or DrasiErrorCodes.UnknownSecretStoreKind
             or DrasiErrorCodes.UnknownStateStoreKind
             or DrasiErrorCodes.UnknownIndexStoreKind
+            or DrasiErrorCodes.UnknownWalProviderKind
             or DrasiErrorCodes.UnknownIdentityKind
             or DrasiErrorCodes.UnknownQueryLanguage
             or DrasiErrorCodes.UnknownChangeOp => new UnknownKindException(code, message),
@@ -107,6 +112,7 @@ public class DrasiException : Exception
         DrasiErrorCodes.BootstrapKindRequired
             or DrasiErrorCodes.StateStorePathRequired
             or DrasiErrorCodes.IndexStorePathRequired
+            or DrasiErrorCodes.WalProviderPathRequired
             or DrasiErrorCodes.IdentityKindRequired
             or DrasiErrorCodes.IdentityConfigInvalid
             or DrasiErrorCodes.DurableRequiresStateStore

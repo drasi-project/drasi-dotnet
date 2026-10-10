@@ -1387,6 +1387,11 @@ public sealed class Engine : IAsyncDisposable, IDisposable
             node["indexStore"] = obj;
         }
 
+        if (options.WalProvider is { } wal)
+        {
+            node["walProvider"] = new JsonObject { ["kind"] = wal.Kind, ["path"] = wal.Path };
+        }
+
         if (options.Identity is { } identity)
         {
             var obj = identity.Config?.DeepClone() as JsonObject ?? [];

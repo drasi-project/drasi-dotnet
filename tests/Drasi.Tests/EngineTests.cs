@@ -65,6 +65,24 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public async Task WalProviderDoesNotReplaceDurableReactionStateStore()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "drasi-wal-" + Guid.NewGuid().ToString("N"));
+        await using var engine = await Engine.CreateAsync(
+            $"test-{Guid.NewGuid():N}",
+            new EngineOptions { WalProvider = new WalProviderOptions { Path = path } });
+        var ex = await Assert.ThrowsAsync<ConfigException>(() =>
+            engine.AddDurableReactionAsync("watch", ["open"], _ => Task.CompletedTask));
+        Assert.Equal(DrasiErrorCodes.DurableRequiresStateStore, ex.Code);
+    }
+
+    [Fact]
+    public void WalProviderDefaultsToRedb()
+    {
+        Assert.Equal("redb", new WalProviderOptions { Path = "/tmp/wal" }.Kind);
+    }
+
+    [Fact]
     public async Task UnknownPluginSourceKindIsTyped()
     {
         await using var engine = await Engine.CreateAsync($"test-{Guid.NewGuid():N}");
