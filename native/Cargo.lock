@@ -191,26 +191,6 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.69.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "271383c67ccabffb7381723dea0672a673f292304fcb45c01cc648c7a8d58088"
-dependencies = [
- "bitflags 2.13.1",
- "cexpr",
- "clang-sys",
- "itertools 0.12.1",
- "lazy_static",
- "lazycell",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash 1.1.0",
- "shlex 1.3.0",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
@@ -222,7 +202,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "rustc-hash 2.1.3",
+ "rustc-hash",
  "shlex 1.3.0",
  "syn 2.0.119",
 ]
@@ -264,18 +244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bitvec"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddcec3d12c579d40898fe0a9a358a803c23e9c52ca3c425707f81c9436211837"
-dependencies = [
- "funty",
- "radium",
- "tap",
- "wyz",
-]
-
-[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -310,17 +278,6 @@ checksum = "225bff33b2141874fe80d71e07d6eec4f85c5c216453dd96388240f96e1acc14"
 dependencies = [
  "cc",
  "pkg-config",
-]
-
-[[package]]
-name = "caches"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0c952ebd9e8c333bc49ded7f5c894cdfff85fef27b342b43a2659cc1a338173"
-dependencies = [
- "bitvec",
- "getrandom 0.2.17",
- "rand 0.8.8",
 ]
 
 [[package]]
@@ -672,16 +629,15 @@ dependencies = [
 
 [[package]]
 name = "drasi-core"
-version = "0.5.10"
+version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e06737256dbabee9ff58a5a74ed267bf41f20437d0e9397755a3a8c73de5d63"
+checksum = "141a75ea0871ab1348e45a06a0d4ccefa98d496cc1798956fbda4f39b068cfec"
 dependencies = [
  "approx",
  "async-recursion",
  "async-stream",
  "async-trait",
  "bytes",
- "caches",
  "chrono",
  "chrono-tz",
  "dateparser",
@@ -714,33 +670,33 @@ dependencies = [
 
 [[package]]
 name = "drasi-ffi-primitives"
-version = "0.11.3"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5104f2bd052d320f9f062ab24cc10e4bcabbf6ceb444e111fc07cdf62babc577"
+checksum = "ed9984c3a19cc35c530d16f4636edad5a2bb6dd77096964cdbeb3443f5585bd4"
 
 [[package]]
 name = "drasi-functions-cypher"
-version = "0.5.10"
+version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d59d003512a6cf59fe510a7991dd05bf6edd114e0a5aafba9d085bc82f8d2415"
+checksum = "d48f336730a809bdc884d62185e3b0f33a5066af4dd982a86a843a9618ad5908"
 dependencies = [
  "drasi-core",
 ]
 
 [[package]]
 name = "drasi-functions-gql"
-version = "0.5.10"
+version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "397da52359c1f97cc002c812f259c53a4699e41d093e1865192ecbcbc7cd3d7d"
+checksum = "6a65caf4d0e9a5e08cada11ee550210a2f3f2e54f7ec4c6ea127134b98cdb485"
 dependencies = [
  "drasi-core",
 ]
 
 [[package]]
 name = "drasi-host-sdk"
-version = "0.11.3"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8b3640eab33216fa1f78c709951126dd81e2c96df2b29c71a324ef201d11090"
+checksum = "4ee4e2d398631f18398235527fc9333a83dcafe312886ff5638b2bab45ba9e28"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -773,9 +729,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-index-rocksdb"
-version = "0.6.4"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9d02d07abeb268d6d45fb10550a27c0c846a1e290dc204ef869479250a6b047"
+checksum = "4fe4f4e40b6fd3a6d57591d0b7a55983db34692405cb77d3ae9e008f63cf3a11"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -803,9 +759,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-lib"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90757ef1daf6f96da9d350d263b32942ccf0ee197f289f4673f558485ec88d4d"
+checksum = "cb3bc930718ceb7edfcb5a7b6158ef28e1d38be71daf74bb66c19d68c03c7468"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -841,9 +797,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-middleware"
-version = "0.5.11"
+version = "0.5.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fcb1c840aac9d83a5bf3d8c3dea5de283ed5fadb3a830d49862193f3b4d9c7a"
+checksum = "c599db1a869d584d624739ed46480adc2ef8b3c67ed2757d4f7a01cfabbc76e8"
 dependencies = [
  "async-trait",
  "base64",
@@ -859,9 +815,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-plugin-sdk"
-version = "0.11.3"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f540dfeea3d9443c27f9a56da3627772bc16b52021d968d46223438de27cda5"
+checksum = "6b2be94057c09193ee2f881bed69111df07c329ef0ac162bd476943cf7f3d73f"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -873,11 +829,14 @@ dependencies = [
  "drasi-lib",
  "log",
  "rmp-serde",
+ "rustls",
+ "semver",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
  "tokio",
  "tokio-stream",
+ "toml",
  "tracing",
  "tracing-log",
  "tracing-subscriber",
@@ -886,9 +845,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-query-ast"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f2621be8fade50d49f1ef475e0f5f7e4bd5f4ac60983fca5b4d46f2ea307087"
+checksum = "4d0b924472052c00532cdfc820125c51ac6ef117a57d154aaf451065dbeea0b6"
 dependencies = [
  "serde",
  "serde_json",
@@ -897,9 +856,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-query-cypher"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45aa57f6e9e997a26b1266f92f69abf4f10ebe69d2f5ffc193a7ca2a6a416ae"
+checksum = "c1d7f6a830c64150b9b1d03967ac322b5a4e65b17c6e62c9febfd4530ade37f7"
 dependencies = [
  "drasi-query-ast",
  "peg",
@@ -909,9 +868,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-query-gql"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "023cb055fb27d8b8a033becf33811bb914c6151340e0efda56972367937885c8"
+checksum = "a13fb05d1ff9119c5ca1bbf70f87837a2f7d4bbcebe6bec1e20b4f5d64ccc4c1"
 dependencies = [
  "drasi-query-ast",
  "peg",
@@ -921,9 +880,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-source-application"
-version = "0.2.11"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4baebcbb02d957e669ba2a5b543664faa136b7441db105314a2fa32a2ee9e4b"
+checksum = "73114b228aaa13c3155b198a86e175f631e6bc6702e1d3c61f67e76926567bf4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -944,9 +903,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-state-store-redb"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d8570f07e3076d5c04880e21ca2b1374db6b4407562188b985ad49410f9bda4"
+checksum = "4ff658bc1c499db29d8927ab0ca1abe127a86a192d11e6277c1fb5f0a440b943"
 dependencies = [
  "async-trait",
  "drasi-lib",
@@ -958,9 +917,9 @@ dependencies = [
 
 [[package]]
 name = "drasi-wal-redb"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0a220606c2dc3f9d6857ed14083a01864bec8c16ad62ddfd46af536ef3f93e2"
+checksum = "cc616c1b07569f092e1f1fbc27207dc8cb579ca5eee961c7280264726021508b"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1134,12 +1093,6 @@ name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
-
-[[package]]
-name = "funty"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
 name = "futures"
@@ -1832,12 +1785,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
-name = "lazycell"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
-
-[[package]]
 name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1855,14 +1802,13 @@ dependencies = [
 
 [[package]]
 name = "librocksdb-sys"
-version = "0.16.0+8.10.0"
+version = "0.17.3+10.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce3d60bc059831dc1c83903fb45c103f75db65c5a7bf22272764d9cc683e348c"
+checksum = "cef2a00ee60fe526157c9023edab23943fae1ce2ab6f4abb2a807c1746835de9"
 dependencies = [
- "bindgen 0.69.5",
+ "bindgen",
  "bzip2-sys",
  "cc",
- "glob",
  "libc",
  "libz-sys",
  "lz4-sys",
@@ -2542,7 +2488,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash 2.1.3",
+ "rustc-hash",
  "rustls",
  "socket2",
  "thiserror 2.0.20",
@@ -2564,7 +2510,7 @@ dependencies = [
  "rand 0.10.2",
  "rand_pcg 0.10.2",
  "ring",
- "rustc-hash 2.1.3",
+ "rustc-hash",
  "rustls",
  "rustls-pki-types",
  "slab",
@@ -2602,12 +2548,6 @@ name = "r-efi"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
-
-[[package]]
-name = "radium"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
 name = "rand"
@@ -2924,9 +2864,9 @@ dependencies = [
 
 [[package]]
 name = "rocksdb"
-version = "0.22.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bd13e55d6d7b8cd0ea569161127567cd587676c99f4472f779a0279aa60a7a7"
+checksum = "ddb7af00d2b17dbd07d82c0063e25411959748ff03e8d4f96134c2ff41fce34f"
 dependencies = [
  "libc",
  "librocksdb-sys",
@@ -2937,12 +2877,6 @@ name = "round"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b02705db4fa872ae37e464fc803b7ffa574e6c4a5e112c52a82550f9dd63b657"
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
@@ -2976,6 +2910,7 @@ checksum = "0283386ce02abc0151e1761d08802dfe86c173b0b494af5cbc086574e453da06"
 dependencies = [
  "aws-lc-rs",
  "once_cell",
+ "ring",
  "rustls-pki-types",
  "rustls-webpki",
  "subtle",
@@ -3412,12 +3347,6 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
-
-[[package]]
-name = "tap"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "thiserror"
@@ -4244,15 +4173,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
-name = "wyz"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
-dependencies = [
- "tap",
-]
-
-[[package]]
 name = "x509-parser"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4398,7 +4318,6 @@ version = "2.0.16+zstd.1.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91e19ebc2adc8f83e43039e79776e3fda8ca919132d68a1fed6a5faca2683748"
 dependencies = [
- "bindgen 0.72.1",
  "cc",
  "pkg-config",
 ]

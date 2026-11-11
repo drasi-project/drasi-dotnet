@@ -25,10 +25,10 @@ Console.WriteLine(
 `GetHostInfo` reports the platform triple and the `drasi-core`, `drasi-lib`,
 and plugin package SDK versions this binary was built against. It also reports
 the cdylib FFI ABI that the loader validates against plugin metadata. Plugins
-must match all of those values. Current packages support the PostgreSQL plugin
-set used by Sentinel: `drasi-core` 0.5.10, `drasi-lib` 0.9.3, the host/plugin
-SDK 0.11.3, and FFI ABI 0.14.0. Use PostgreSQL source and bootstrap artifacts
-built for this exact set.
+must match all of those values. Current packages use `drasi-core` 0.5.11,
+`drasi-lib` 0.9.4, the host/plugin SDK 0.12.0, and FFI ABI 0.15.0. Use plugin
+artifacts built for this set, including PostgreSQL source and bootstrap plugins.
+Plugins built for the previous FFI ABI 0.14.0 must be replaced.
 
 ## Search the registry
 

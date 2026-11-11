@@ -46,13 +46,13 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void HostInfoReportsSentinelPostgresPluginAbi()
+    public void HostInfoReportsCurrentPluginAbi()
     {
         var info = Engine.GetHostInfo();
-        Assert.Equal("0.5.10", info.CoreVersion);
-        Assert.Equal("0.9.3", info.LibVersion);
-        Assert.Equal("0.11.3", info.SdkVersion);
-        Assert.Equal("0.14.0", info.FfiSdkVersion);
+        Assert.Equal("0.5.11", info.CoreVersion);
+        Assert.Equal("0.9.4", info.LibVersion);
+        Assert.Equal("0.12.0", info.SdkVersion);
+        Assert.Equal("0.15.0", info.FfiSdkVersion);
     }
 
     [Fact]

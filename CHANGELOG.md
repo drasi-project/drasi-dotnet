@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update the native Drasi libraries to core 0.5.11, lib 0.9.4, and host/plugin
+  SDK 0.12.0, with matching storage backends. Native plugins now require FFI
+  ABI 0.15.0; replace plugins built for ABI 0.14.0.
+
 ## [0.2.0] - 2026-10-10
 
 ### Added

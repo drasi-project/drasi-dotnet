@@ -120,6 +120,7 @@ pub struct Resolved {
     pub version: String,
     pub target_triple: String,
     pub sdk_version: String,
+    pub abi_version: String,
     pub core_version: String,
     pub lib_version: String,
 }
@@ -176,12 +177,12 @@ impl PluginHost {
 
     /// The version and platform information plugins are matched against.
     pub fn host_info() -> HostVersionInfo {
-        HostVersionInfo {
-            sdk_version: DRASI_SDK_VERSION.to_string(),
-            core_version: DRASI_CORE_VERSION.to_string(),
-            lib_version: DRASI_LIB_VERSION.to_string(),
-            target_triple: target_triple().to_string(),
-        }
+        HostVersionInfo::new(
+            DRASI_SDK_VERSION,
+            DRASI_CORE_VERSION,
+            DRASI_LIB_VERSION,
+            target_triple(),
+        )
     }
 
     async fn callback_context(
@@ -502,6 +503,7 @@ impl PluginHost {
             version: resolved.version.clone(),
             digest,
             sdk_version: resolved.sdk_version.clone(),
+            abi_version: Some(resolved.abi_version.clone()),
             core_version: resolved.core_version.clone(),
             lib_version: resolved.lib_version.clone(),
             platform: resolved.target_triple.clone(),
@@ -664,6 +666,7 @@ pub async fn resolve(client: &OciRegistryClient, reference: &str) -> Result<Reso
         version: metadata.version,
         target_triple: metadata.target_triple,
         sdk_version: metadata.sdk_version,
+        abi_version: resolved.abi_version,
         core_version: metadata.core_version,
         lib_version: metadata.lib_version,
     })
@@ -732,4 +735,45 @@ pub fn describe_host() -> Value {
 /// The SHA-256 of a file on disk.
 pub fn file_hash(path: &Path) -> Result<String> {
     compute_file_hash(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn host_info_uses_loader_abi() {
+        let host = PluginHost::host_info();
+        assert_eq!(host.sdk_version, DRASI_SDK_VERSION);
+        assert_eq!(host.core_version, DRASI_CORE_VERSION);
+        assert_eq!(host.lib_version, DRASI_LIB_VERSION);
+        assert_eq!(host.target_triple, target_triple());
+        assert_eq!(host.abi_version(), ffi_sdk_version());
+    }
+
+    #[tokio::test]
+    async fn recorded_install_preserves_resolved_abi() {
+        let host = PluginHost::new(HashMap::new());
+        let resolved = Resolved {
+            reference: "ghcr.io/test/source/test@sha256:abc".to_string(),
+            kind: "test".to_string(),
+            plugin_type: "source".to_string(),
+            version: "1.0.0".to_string(),
+            target_triple: target_triple().to_string(),
+            sdk_version: DRASI_SDK_VERSION.to_string(),
+            abi_version: ffi_sdk_version().to_string(),
+            core_version: DRASI_CORE_VERSION.to_string(),
+            lib_version: DRASI_LIB_VERSION.to_string(),
+        };
+        host.record_install(&resolved, Path::new(file!())).await;
+
+        let installed = host.installed.lock().await;
+        let entry = &installed[0];
+        assert_eq!(entry.sdk_version, resolved.sdk_version);
+        assert_eq!(entry.abi_version.as_deref(), Some(ffi_sdk_version()));
+        assert!(entry.file_hash.is_some());
+        let json = serde_json::to_string(entry).unwrap();
+        let restored: LockedPlugin = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, *entry);
+    }
 }
