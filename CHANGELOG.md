@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-12
+
 ### Changed
 
 - Update the native Drasi libraries to core 0.5.11, lib 0.9.4, and host/plugin
   SDK 0.12.0, with matching storage backends. Native plugins now require FFI
   ABI 0.15.0; replace plugins built for ABI 0.14.0.
+
+### Fixed
+
+- Use supported macOS runners for native NuGet assets.
+- Synchronize query-stream tests with actual event delivery before asserting diffs.
 
 ## [0.2.0] - 2026-10-10
 
@@ -44,6 +51,7 @@ Python and Node.
 - RID-specific native binaries in the nupkg (`win-x64`, `linux-x64`,
   `linux-arm64`, `osx-x64`, `osx-arm64`).
 
-[Unreleased]: https://github.com/drasi-project/drasi-dotnet/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/drasi-project/drasi-dotnet/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/drasi-project/drasi-dotnet/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/drasi-project/drasi-dotnet/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/drasi-project/drasi-dotnet/releases/tag/v0.1.0

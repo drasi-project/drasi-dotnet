@@ -92,16 +92,43 @@ internal static class TestEngine
         return value;
     }
 
-    internal static async Task WaitForReactionAsync(Engine engine, string id, TimeSpan? timeout = null)
+    internal static async Task WaitForQueryStreamAsync(
+        Engine engine,
+        StartedStream<QueryResultEvent> stream,
+        string sourceId)
     {
-        var listed = await WaitUntilAsync(
-            () => engine.ListReactionsAsync(),
-            list => list.Any(item => item.Id == id),
-            timeout);
-        if (!listed.Any(item => item.Id == id))
+        var probes = new HashSet<string>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        // Provisioning and Running status precede subscription wiring. Confirm
+        // delivery instead, then drain probe removals before the test's events.
+        do
         {
-            throw new TimeoutException($"reaction '{id}' did not appear");
+            var id = Id("stream-ready");
+            probes.Add(id);
+            await engine.PushChangeAsync(sourceId, Order(id, "open", 0), cts.Token);
+            await Task.WhenAny(stream.Pending, Task.Delay(25, cts.Token));
+            cts.Token.ThrowIfCancellationRequested();
         }
+        while (!stream.Pending.IsCompleted);
+
+        await stream.WaitForAsync(evt => evt.Results.Any(diff =>
+            probes.Contains(diff.Data?["id"]?.ToString() ?? "")));
+        _ = stream.MoveNext();
+        foreach (var id in probes)
+        {
+            await engine.PushChangeAsync(sourceId, new SourceChange { Op = ChangeOp.Delete, Id = id });
+        }
+
+        await stream.WaitForAsync(evt =>
+        {
+            foreach (var diff in evt.Results.Where(diff => diff.Type == DiffType.Delete))
+            {
+                probes.Remove(diff.Data?["id"]?.ToString() ?? "");
+            }
+
+            return probes.Count == 0;
+        });
+        _ = stream.MoveNext();
     }
 
     internal static void TryDelete(string path)

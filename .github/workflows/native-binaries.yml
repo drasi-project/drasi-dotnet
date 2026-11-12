@@ -1,7 +1,7 @@
 # Produce RID-specific native libraries and pack them into the Drasi nupkg.
 #
 # Every target is built on a matching native runner except osx-x64, which is
-# cross-compiled on macos-14 (Apple Silicon) because macos-13 Intel runners
+# cross-compiled on macos-15 (Apple Silicon) because macos-13 Intel runners
 # stay queued. Linux jobs are pinned to Ubuntu 22.04 (glibc 2.35).
 #
 # workflow_dispatch and PRs build + pack + verify load. A v*.*.* tag also
@@ -40,11 +40,11 @@ jobs:
             rid: linux-arm64
             rust_target: aarch64-unknown-linux-gnu
             artifact: libdrasi_ffi.so
-          - host: macos-14
+          - host: macos-15
             rid: osx-x64
             rust_target: x86_64-apple-darwin
             artifact: libdrasi_ffi.dylib
-          - host: macos-14
+          - host: macos-15
             rid: osx-arm64
             rust_target: aarch64-apple-darwin
             artifact: libdrasi_ffi.dylib
@@ -153,7 +153,7 @@ jobs:
             rid: linux-x64
           - host: ubuntu-22.04-arm
             rid: linux-arm64
-          - host: macos-14
+          - host: macos-15
             rid: osx-arm64
     runs-on: ${{ matrix.host }}
     steps:

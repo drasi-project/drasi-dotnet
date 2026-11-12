@@ -64,14 +64,14 @@ public sealed class LeakSoakTests
     [Fact]
     public async Task LongRunningStreamThenDisposeIsClean()
     {
-        var engine = await TestEngine.StartedAsync("long-stream");
+        await using var engine = await TestEngine.StartedAsync("long-stream");
         await engine.AddSourceAsync("orders");
         await engine.AddQueryAsync("q", TestEngine.OrdersQuery, ["orders"]);
         await engine.WaitForQueryAsync("q");
 
         var seen = 0;
         await using var stream = new StartedStream<QueryResultEvent>(engine.QueryResultsAsync("q", "stream-long"));
-        await TestEngine.WaitForReactionAsync(engine, "stream-long");
+        await TestEngine.WaitForQueryStreamAsync(engine, stream, "orders");
         for (var i = 0; i < 5; i++)
         {
             await engine.PushChangeAsync("orders", TestEngine.Order($"o{i}"));
