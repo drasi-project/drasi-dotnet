@@ -13,7 +13,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>Drasi</PackageId>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Authors>The Drasi Authors</Authors>
     <Copyright>Copyright 2026 The Drasi Authors</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

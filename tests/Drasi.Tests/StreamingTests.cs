@@ -84,7 +84,7 @@ public sealed class StreamingTests
 
         var types = new List<DiffType>();
         await using var stream = new StartedStream<QueryResultEvent>(engine.QueryResultsAsync("q", "stream-diffs"));
-        await TestEngine.WaitForReactionAsync(engine, "stream-diffs");
+        await TestEngine.WaitForQueryStreamAsync(engine, stream, "orders");
 
         await engine.PushChangeAsync("orders", TestEngine.Order("o1", "open", 1));
         await engine.PushChangeAsync(

@@ -46,13 +46,13 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void HostInfoReportsSentinelPostgresPluginAbi()
+    public void HostInfoReportsCurrentPluginAbi()
     {
         var info = Engine.GetHostInfo();
-        Assert.Equal("0.5.10", info.CoreVersion);
-        Assert.Equal("0.9.3", info.LibVersion);
-        Assert.Equal("0.11.3", info.SdkVersion);
-        Assert.Equal("0.14.0", info.FfiSdkVersion);
+        Assert.Equal("0.5.11", info.CoreVersion);
+        Assert.Equal("0.9.4", info.LibVersion);
+        Assert.Equal("0.12.0", info.SdkVersion);
+        Assert.Equal("0.15.0", info.FfiSdkVersion);
     }
 
     [Fact]
@@ -213,8 +213,10 @@ public sealed class EngineTests
         Assert.True(metrics.LiveResultsCount == 0 || metrics.LiveResultsCount > 0);
     }
 
-    [Fact]
-    public async Task QueryResultsStreamEmitsAdd()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(150)]
+    public async Task QueryResultsStreamEmitsAdd(int subscriptionDelayMs)
     {
         await using var engine = await Engine.CreateAsync($"test-{Guid.NewGuid():N}");
         await engine.StartAsync();
@@ -222,15 +224,22 @@ public sealed class EngineTests
         await engine.AddQueryAsync("open", OpenOrders, ["orders"]);
         await engine.WaitForQueryAsync("open");
 
-        await using var stream = new StartedStream<QueryResultEvent>(
-            engine.QueryResultsAsync("open", "stream-open"));
-        await TestEngine.WaitUntilAsync<IReadOnlyList<ComponentInfo>>(
-            () => engine.ListReactionsAsync(),
-            reactions => reactions.Any(reaction => reaction.Id == "stream-open"),
-            TimeSpan.FromSeconds(5));
+        async IAsyncEnumerable<QueryResultEvent> Results()
+        {
+            await Task.Delay(subscriptionDelayMs);
+            await foreach (var result in engine.QueryResultsAsync("open", "stream-open"))
+            {
+                yield return result;
+            }
+        }
+
+        await using var stream = new StartedStream<QueryResultEvent>(Results());
+        await TestEngine.WaitForQueryStreamAsync(engine, stream, "orders");
+        Assert.Empty(await engine.GetQueryResultsAsync("open"));
         await engine.PushChangeAsync("orders", Order("o2", "open", 7));
         var evt = await stream.WaitForAsync(
-            result => result.Results.Any(diff => diff.Type == DiffType.Add),
+            result => result.Results.Any(diff =>
+                diff.Type == DiffType.Add && diff.Data?["id"]?.ToString() == "o2"),
             TimeSpan.FromSeconds(15));
         Assert.Equal("open", evt.QueryId);
     }
